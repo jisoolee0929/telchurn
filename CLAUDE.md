@@ -439,9 +439,24 @@ vercel dev               # http://localhost:3000
   - 저위험 샘플 이탈 확률 0.027 (< 0.5)
   - 변환 후 피처 수 16개 정상
 
+#### Step 2 — Flask API 서버
+- `python-server/app.py` 작성 완료
+  - `GET /health`, `POST /predict-single`, `POST /predict-batch` 구현
+  - `classify_risk()`, `extract_risk_factors()`, `EVENT_MAP` 구현
+  - CORS 설정 (`localhost:3000`, `*.vercel.app`)
+  - pkl 로드는 앱 시작 시 1회, 추론 시 `preprocessor.transform()` 만 사용
+- `python-server/Procfile` 작성 완료
+- Step 2 테스트 전체 통과 (22개 항목):
+  - `/health` 정상
+  - 고위험 샘플: 확률 0.891, risk_level `high`, 위험요인 3개, discount 이벤트 카드
+  - 저위험 샘플: 확률 0.027, risk_level `low`, loyalty 이벤트 카드
+  - `tenure=0` ZeroDivision 방지 정상
+  - `SeniorCitizen=1` 위험 요인 단독 포함 정상
+  - `/predict-batch` summary 집계 (total/high_risk/low_risk) 정상
+  - 빈 바디 / `customers` 필드 누락 → 400 반환 정상
+
 ### 미완료
 
-- [ ] Step 2 — Flask API 서버 (`app.py`, `Procfile`)
 - [ ] Step 3 — Node.js 중계 서버 (`api/predict-batch.js`, `api/predict-single.js`)
 - [ ] Step 4 — 대시보드 UI (`index.html`, `dashboard.js`, `style.css`)
 - [ ] Step 5 — Railway / Vercel 배포
