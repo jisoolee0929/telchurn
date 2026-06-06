@@ -495,6 +495,17 @@ vercel dev               # http://localhost:3000
   - dashboard.js 함수 15개 정의 및 로직 검증 정상
   - HTML 태그 균형 51/51 정상 (초기 UTF-8 인코딩 오탐 수정)
 
+#### Step 5 — Railway / Vercel 배포
+- `python-server/.gitignore` 생성 완료 (CSV, `__pycache__/`, `*.pyc`, `.env` 제외)
+- Railway 배포 완료 (GitHub 연동, Root: `python-server`)
+  - **Railway URL**: `https://telchurn-production.up.railway.app`
+  - `/health` 응답 정상: `{"status":"ok"}`
+- Vercel 배포 완료 (CLI `vercel --prod`, `PYTHON_API_URL` = Railway URL)
+  - **Vercel URL**: `https://node-server-tawny.vercel.app`
+- E2E 검증 통과:
+  - `predict-single`: C001 이탈 확률 0.8045 (high), 위험요인 3개, discount 이벤트
+  - `predict-batch`: 2건 집계 (high=1, low=1), C001 0.8045 / C002 0.0546
+
 ### 미완료
 
-- [ ] Step 5 — Railway / Vercel 배포
+없음 — 전체 완료

@@ -1,0 +1,5 @@
+WA_Fn-UseC_-Telco-Customer-Churn.csv
+__pycache__/
+*.pyc
+*.pyo
+.env
