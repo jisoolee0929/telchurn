@@ -472,7 +472,29 @@ vercel dev               # http://localhost:3000
   - GET 메서드 → 405 반환 정상
   - Flask 다운 시 → 500 반환 정상
 
+#### Step 4 — 대시보드 UI
+- `node-server/public/index.html` 작성 완료
+  - 폰트: Exo 2 (헤딩) + JetBrains Mono (수치) + DM Sans (본문)
+  - PapaParse 5.4.1 / Chart.js 4.4.1 CDN 포함
+  - CSV 업로드(드래그앤드롭 + 파일선택 + 템플릿 다운로드), 수동 입력 폼(10개 feature), 결과 영역(요약 카드/차트/이벤트카드/테이블) 구현
+- `node-server/public/dashboard.js` 작성 완료
+  - 탭 전환, 드롭존, PapaParse CSV 파싱, 템플릿 다운로드
+  - `/api/predict-batch` / `/api/predict-single` fetch 연동
+  - avg_monthly_spend 클라이언트 자동 계산 (tenure > 0 ? TotalCharges / tenure : 0)
+  - Chart.js 도넛 차트 렌더링 (high=빨강 / low=초록)
+  - 이탈 확률 내림차순 정렬 테이블 + 위험도 필터 버튼
+  - 이벤트 카드 렌더링 (고위험/저위험 각 1장, 중복 제거)
+  - 로딩/에러 상태 핸들링
+- `node-server/public/style.css` 작성 완료 (17.3 KB)
+  - 다크 미션컨트롤 테마 (`--bg: #08111F`, `--accent: #38BDF8`)
+  - 위험도 뱃지, 확률 프로그레스바, 이벤트 카드 좌측 컬러 보더
+  - 반응형 레이아웃 (900px / 680px / 480px 브레이크포인트)
+- Step 4 테스트 전체 통과 (40개 항목):
+  - 정적 파일 서빙 (index.html / style.css / dashboard.js) 정상
+  - API E2E (predict-single, predict-batch, 이탈확률 내림차순 정렬, summary 집계) 정상
+  - dashboard.js 함수 15개 정의 및 로직 검증 정상
+  - HTML 태그 균형 51/51 정상 (초기 UTF-8 인코딩 오탐 수정)
+
 ### 미완료
 
-- [ ] Step 4 — 대시보드 UI (`index.html`, `dashboard.js`, `style.css`)
 - [ ] Step 5 — Railway / Vercel 배포

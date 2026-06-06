@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChurnSight — 이탈 예측 대시보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#38BDF8" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="#38BDF8" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="#38BDF8" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <span class="logo-name">ChurnSight</span>
+            <span class="logo-sub">Telco Analytics Platform</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="model-badge">
+          <div class="pulse-dot"></div>
+          <span>Logistic Regression · Active</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+
+      <!-- Input Section -->
+      <section class="panel input-panel">
+        <div class="panel-header">
+          <div class="tab-nav">
+            <button class="tab-btn active" data-tab="csv">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              CSV 업로드
+            </button>
+            <button class="tab-btn" data-tab="manual">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              수동 입력
+            </button>
+          </div>
+        </div>
+
+        <!-- CSV Panel -->
+        <div id="csv-panel" class="tab-content active">
+          <div id="drop-zone" class="drop-zone">
+            <div class="drop-icon">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+            </div>
+            <p class="drop-title">CSV 파일을 드래그하거나 클릭하여 업로드</p>
+            <input type="file" id="file-input" accept=".csv" hidden>
+            <button class="btn-secondary" id="upload-btn">파일 선택</button>
+            <p class="drop-hint">
+              <a href="#" id="template-download" class="link">템플릿 다운로드</a>
+              &nbsp;·&nbsp; CSV 형식 필요
+            </p>
+          </div>
+          <div id="file-info" class="file-info hidden"></div>
+          <button id="batch-predict-btn" class="btn-predict hidden">
+            <span>일괄 예측 실행</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+
+        <!-- Manual Panel -->
+        <div id="manual-panel" class="tab-content">
+          <form id="manual-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>고객 ID</label>
+                <input type="text" name="customer_id" value="C001" placeholder="C001">
+              </div>
+              <div class="form-group">
+                <label>가입 기간 <span class="unit">개월</span></label>
+                <input type="number" name="tenure" min="0" value="12" placeholder="12">
+              </div>
+              <div class="form-group">
+                <label>월 요금 <span class="unit">$</span></label>
+                <input type="number" name="MonthlyCharges" step="0.01" value="70.5" placeholder="70.50">
+              </div>
+              <div class="form-group">
+                <label>총 누적 요금 <span class="unit">$</span></label>
+                <input type="number" name="TotalCharges" step="0.01" value="846" placeholder="846.00">
+              </div>
+              <div class="form-group">
+                <label>결제 방식</label>
+                <select name="PaymentMethod">
+                  <option value="Electronic check">전자수표</option>
+                  <option value="Mailed check">우편수표</option>
+                  <option value="Bank transfer (automatic)">자동이체</option>
+                  <option value="Credit card (automatic)">신용카드 자동결제</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>온라인 보안</label>
+                <select name="OnlineSecurity">
+                  <option value="No">미사용</option>
+                  <option value="Yes">사용</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>기술 지원</label>
+                <select name="TechSupport">
+                  <option value="No">미사용</option>
+                  <option value="Yes">사용</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>스트리밍 TV</label>
+                <select name="StreamingTV">
+                  <option value="No">미사용</option>
+                  <option value="Yes">사용</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>스트리밍 영화</label>
+                <select name="StreamingMovies">
+                  <option value="No">미사용</option>
+                  <option value="Yes">사용</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>고령 고객</label>
+                <select name="SeniorCitizen">
+                  <option value="0">아니오</option>
+                  <option value="1">예</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn-predict">
+              <span>단일 예측 실행</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Loading -->
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <span>모델 추론 중…</span>
+      </div>
+
+      <!-- Error -->
+      <div id="error-msg" class="error-msg hidden"></div>
+
+      <!-- Results -->
+      <section id="results" class="results hidden">
+
+        <!-- Summary Cards -->
+        <div class="summary-row">
+          <div class="summary-card">
+            <div class="summary-label">전체 고객</div>
+            <div id="total-count" class="summary-value">—</div>
+          </div>
+          <div class="summary-card card-high">
+            <div class="summary-label"><span class="dot dot-high"></span>고위험 고객</div>
+            <div id="high-count" class="summary-value val-high">—</div>
+          </div>
+          <div class="summary-card card-low">
+            <div class="summary-label"><span class="dot dot-low"></span>저위험 고객</div>
+            <div id="low-count" class="summary-value val-low">—</div>
+          </div>
+        </div>
+
+        <!-- Chart + Events -->
+        <div class="analytics-row">
+          <div class="panel chart-panel">
+            <div class="panel-title">위험도 분포</div>
+            <div class="chart-wrap">
+              <canvas id="risk-chart"></canvas>
+            </div>
+          </div>
+          <div class="events-col">
+            <div class="panel-title">이벤트 추천</div>
+            <div id="event-cards"></div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="panel table-panel">
+          <div class="table-toolbar">
+            <div class="panel-title">고객 목록</div>
+            <div class="filter-group">
+              <button class="filter-btn active" data-filter="all">전체</button>
+              <button class="filter-btn" data-filter="high">고위험</button>
+              <button class="filter-btn" data-filter="low">저위험</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="ctable">
+              <thead>
+                <tr>
+                  <th>고객 ID</th>
+                  <th>이탈 확률</th>
+                  <th>위험도</th>
+                  <th>주요 위험 요인</th>
+                  <th>추천 이벤트</th>
+                </tr>
+              </thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
