@@ -455,8 +455,24 @@ vercel dev               # http://localhost:3000
   - `/predict-batch` summary 집계 (total/high_risk/low_risk) 정상
   - 빈 바디 / `customers` 필드 누락 → 400 반환 정상
 
+#### Step 3 — Node.js 중계 서버
+- `node-server/` 디렉토리 구조 생성 완료 (`api/`, `public/`)
+- `package.json` 작성 완료 (`"type": "module"` 포함)
+- `vercel.json` 작성 완료
+  - `builds`: `@vercel/node`(api), `@vercel/static`(public)
+  - `routes`: `/api/predict-batch` → `.js`, `/api/predict-single` → `.js` 명시적 매핑
+  - 초기 `routes` 설정 오류 수정: `/api/(.*)` → `/api/$1` 패턴이 파일을 못 찾는 문제 → 경로별 명시 매핑으로 교체
+- `.env` 작성 완료 (`PYTHON_API_URL=http://localhost:5000`)
+- `.gitignore` 작성 완료 (`.env`, `node_modules/`, `.vercel/` 제외)
+- `api/predict-batch.js` 작성 완료 (Flask `/predict-batch` 중계, 500 에러 핸들링)
+- `api/predict-single.js` 작성 완료 (Flask `/predict-single` 중계, 500 에러 핸들링)
+- Step 3 테스트 전체 통과 (16개 항목, vercel dev 실서버 기준):
+  - `/api/predict-single` Node → Flask 중계 정상 (churn_probability, risk_level, recommended_event, key_risk_factors, customer_id 보존)
+  - `/api/predict-batch` Node → Flask 배치 중계 정상 (results 2건, summary 집계)
+  - GET 메서드 → 405 반환 정상
+  - Flask 다운 시 → 500 반환 정상
+
 ### 미완료
 
-- [ ] Step 3 — Node.js 중계 서버 (`api/predict-batch.js`, `api/predict-single.js`)
 - [ ] Step 4 — 대시보드 UI (`index.html`, `dashboard.js`, `style.css`)
 - [ ] Step 5 — Railway / Vercel 배포
