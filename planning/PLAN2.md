@@ -10,7 +10,7 @@
 | Priority | 내용 | 상태 | PR | 완료일 |
 |---|---|---|---|---|
 | 1 | 디자인 개선 + ConnectCare 브랜딩 | ✅ 완료 | [#6](https://github.com/jisoolee0929/telchurn/pull/6) | 2026-06-16 |
-| 2 | K-means 군집화 (k=4) 추가 | ⬜ 미완료 | — | — |
+| 2 | K-means 군집화 (k=4) 추가 | ✅ 완료 | [#8](https://github.com/jisoolee0929/telchurn/pull/8) | 2026-06-16 |
 | 3 | What-if 시뮬레이터 | ⬜ 미완료 | — | — |
 
 ---
@@ -22,7 +22,7 @@
     → node-server/public/ 파일 전체 수정
     → 라이트 테마 + KPI 카드 4개 + 레이아웃 재구성
 
-[Priority 2] ⬜ K-means 군집화 (k=4) 추가
+[Priority 2] ✅ K-means 군집화 (k=4) 추가
     → python-server/train.py: KMeans 학습 + pkl 저장
     → python-server/app.py: CLUSTER_LABELS + ACTION_MAP + 응답 스키마 확장
     → node-server/public/dashboard.js: 군집 뱃지 렌더링
@@ -160,143 +160,98 @@
 
 ---
 
-## Priority 2 — K-means 군집화 (k=4) 추가
+## Priority 2 — K-means 군집화 (k=4) 추가 ✅ 완료
+
+> **완료일**: 2026-06-16 | **PR**: [#8](https://github.com/jisoolee0929/telchurn/pull/8) | **커밋**: `d0cebb6`
 
 **목표**: 이탈 예측에 군집 정보 추가 → 위험도 × 군집 8가지 추천 액션
+
+### 군집 번호 검증 결과 (train.py 실행 후 groupby 출력)
+
+| 군집 | tenure 평균 | 월요금 평균 | 이탈율 | 레이블 | 색상 |
+|---|---|---|---|---|---|
+| 0 | 54.8개월 | $34.98 | 5% | 장기 저비용 안정군 | green |
+| 1 | 15.4개월 | $80.22 | 48% | 단기 고비용 이탈위험군 | red |
+| 2 | 59.1개월 | $93.78 | 16% | 장기 고비용 우량군 | blue |
+| 3 | 10.9개월 | $31.36 | 24% | 신규 저비용 관찰군 | orange |
+
+→ IMPROVEMENT.md 예상값과 정확히 일치 — `CLUSTER_LABELS` 번호 수정 불필요
 
 ### 2-1. `python-server/train.py` 수정
 
 #### 추가 import
-- [ ] `from sklearn.cluster import KMeans` 추가
+- [x] `from sklearn.cluster import KMeans` 추가
 
 #### 군집 학습 코드 추가 (기존 Logistic Regression 학습 이후)
-```python
-CLUSTER_FEATURES = ['tenure', 'MonthlyCharges', 'TotalCharges', 'avg_monthly_spend']
+- [x] `CLUSTER_FEATURES`, `cluster_scaler`, `kmeans` 정의 및 학습
+- [x] `kmeans.pkl`, `cluster_scaler.pkl` 저장
 
-X_cluster = df[CLUSTER_FEATURES].copy()
-cluster_scaler = StandardScaler()
-X_cluster_scaled = cluster_scaler.fit_transform(X_cluster)
-
-kmeans = KMeans(n_clusters=4, random_state=42, n_init=10)
-kmeans.fit(X_cluster_scaled)
-
-with open('kmeans.pkl', 'wb') as f:
-    pickle.dump(kmeans, f)
-with open('cluster_scaler.pkl', 'wb') as f:
-    pickle.dump(cluster_scaler, f)
-```
-
-- [ ] 검증 출력 추가 — `df['cluster'] = kmeans.labels_` 후 groupby 결과 print
-  ```python
-  df['Churn_binary'] = df['Churn']  # 이미 0/1 매핑된 컬럼
-  print(df.groupby('cluster')[CLUSTER_FEATURES + ['Churn_binary']].mean().round(2))
-  print(df.groupby('cluster').size())
-  ```
+- [x] 검증 출력 추가 — `df['cluster'] = kmeans.labels_` 후 groupby 결과 print
 
 #### 실행 및 군집 번호 검증
-- [ ] `python train.py` 실행 → `kmeans.pkl`, `cluster_scaler.pkl` 생성 확인
-- [ ] groupby 출력에서 각 군집의 tenure/MonthlyCharges/이탈율 확인
-- [ ] IMPROVEMENT.md 표와 대조하여 번호 매핑:
-
-  | 확인 기준 | tenure 평균 | 월요금 평균 | 이탈율 | 예상 레이블 |
-  |---|---|---|---|---|
-  | ~55개월, ~$35, ~5% | ✓ | ✓ | ✓ | 군집 0 (장기 저비용 안정군) |
-  | ~15개월, ~$80, ~48% | ✓ | ✓ | ✓ | 군집 1 (단기 고비용 이탈위험군) |
-  | ~59개월, ~$94, ~16% | ✓ | ✓ | ✓ | 군집 2 (장기 고비용 우량군) |
-  | ~11개월, ~$31, ~24% | ✓ | ✓ | ✓ | 군집 3 (신규 저비용 관찰군) |
-
-- [ ] 실제 출력 기반으로 `app.py`의 `CLUSTER_LABELS` 키 번호 조정 (필요 시)
+- [x] `python train.py` 실행 → `kmeans.pkl`, `cluster_scaler.pkl` 생성 확인
+- [x] groupby 출력에서 각 군집의 tenure/MonthlyCharges/이탈율 확인
+- [x] IMPROVEMENT.md 표와 대조하여 번호 매핑 — 번호 수정 불필요
 
 ---
 
 ### 2-2. `python-server/app.py` 수정
 
 #### 모델 로드 추가 (앱 시작 시)
-- [ ] `kmeans.pkl`, `cluster_scaler.pkl` 로드 코드 추가
-  ```python
-  with open('kmeans.pkl', 'rb') as f:
-      kmeans = pickle.load(f)
-  with open('cluster_scaler.pkl', 'rb') as f:
-      cluster_scaler = pickle.load(f)
-  ```
+- [x] `kmeans.pkl`, `cluster_scaler.pkl` 로드 코드 추가
 
 #### 상수 정의 추가
-- [ ] `CLUSTER_FEATURES = ['tenure', 'MonthlyCharges', 'TotalCharges', 'avg_monthly_spend']`
-- [ ] `CLUSTER_LABELS` 딕셔너리 정의 (IMPROVEMENT.md 내용 그대로)
-- [ ] `ACTION_MAP` 딕셔너리 정의 — 8가지 `(risk_level, cluster_id)` 조합
-- [ ] 기존 `EVENT_MAP` 제거 (ACTION_MAP으로 대체)
+- [x] `CLUSTER_FEATURES = ['tenure', 'MonthlyCharges', 'TotalCharges', 'avg_monthly_spend']`
+- [x] `CLUSTER_LABELS` 딕셔너리 정의 (IMPROVEMENT.md 내용 그대로)
+- [x] `ACTION_MAP` 딕셔너리 정의 — 8가지 `(risk_level, cluster_id)` 조합
+- [x] 기존 `EVENT_MAP` 제거 (ACTION_MAP으로 대체)
 
 #### 헬퍼 함수 수정
-- [ ] `get_recommended_event(risk_level, cluster_id)` 함수 추가
-  ```python
-  def get_recommended_event(risk_level: str, cluster_id: int) -> dict:
-      return ACTION_MAP.get((risk_level, cluster_id), ACTION_MAP[("low", 3)])
-  ```
+- [x] `get_recommended_event(risk_level, cluster_id)` 함수 추가
 
 #### `/predict-batch` 엔드포인트 수정
-- [ ] `avg_monthly_spend` 파생 feature 생성 후 군집 예측 추가
-  ```python
-  X_cluster = df[CLUSTER_FEATURES].copy()
-  X_cluster_scaled = cluster_scaler.transform(X_cluster)
-  cluster_ids = kmeans.predict(X_cluster_scaled)
-  ```
-- [ ] 결과 dict에 군집 필드 추가:
-  `cluster_id`, `cluster_name`, `cluster_description`, `cluster_color`
-- [ ] `recommended_event` → `get_recommended_event(risk_level, cluster_id)` 호출로 변경
-- [ ] `summary`에 `cluster_distribution: {0: N, 1: N, 2: N, 3: N}` 추가
+- [x] 결과 dict에 군집 필드 추가: `cluster_id`, `cluster_name`, `cluster_description`, `cluster_color`
+- [x] `recommended_event` → `get_recommended_event(risk_level, cluster_id)` 호출로 변경
+- [x] `summary`에 `cluster_distribution: {0: N, 1: N, 2: N, 3: N}` 추가
 
 #### `/predict-single` 엔드포인트 수정
-- [ ] 동일하게 단일 고객 군집 예측 로직 추가
-- [ ] 응답에 `cluster_id`, `cluster_name`, `cluster_description`, `cluster_color` 포함
+- [x] 동일하게 단일 고객 군집 예측 로직 추가
+- [x] 응답에 `cluster_id`, `cluster_name`, `cluster_description`, `cluster_color` 포함
 
 #### 응답 스키마 변경 검증
-- [ ] 로컬 Flask 재실행: `python app.py`
-- [ ] `POST /predict-batch` 테스트 — 응답에 `cluster_id`, `cluster_name` 포함 확인
-- [ ] 8가지 조합 중 최소 2~3가지 직접 테스트
+- [x] Flask 로컬 실행 후 `predict-single` / `predict-batch` 4건 테스트 통과
+- [x] 8가지 조합 중 4가지 직접 테스트: C001(high+1), C002(low+0), C003(low+2), C004(high+3)
 
 ---
 
 ### 2-3. `node-server/public/dashboard.js` 군집 뱃지 렌더링
 
 #### 군집 뱃지 렌더 함수 추가
-- [ ] `renderClusterBadge(cluster)` 함수 작성
-  ```javascript
-  function renderClusterBadge(cluster) {
-    const color = cluster.cluster_color; // 'green' | 'red' | 'blue' | 'orange'
-    return `<span class="badge badge-cluster-${color}"
-              title="${cluster.cluster_description}">
-              ${cluster.cluster_name}
-            </span>`;
-  }
-  ```
+- [x] `renderClusterBadge(result)` 함수 작성 — tooltip에 `cluster_description` 포함
+- [x] `CLUSTER_LABELS` 상수 정의 (app.py와 동기화)
 
 #### 테이블 렌더링 업데이트
-- [ ] `renderTable(results)` — 군집 컬럼 셀 placeholder 제거 → `renderClusterBadge(result)` 호출
-- [ ] 추천 액션 컬럼 → `result.recommended_event.title` 표시 (툴팁에 description)
-
-#### 요약 카드 업데이트
-- [ ] Priority 1에서 추가한 `updateKPICards` 함수에 `cluster_distribution` 활용 (선택 사항: 군집별 소계 툴팁)
+- [x] `renderTable()` — 군집 컬럼 셀 placeholder 제거 → `renderClusterBadge(r)` 호출
+- [x] 추천 액션 컬럼 → `result.recommended_event.title` 표시 (툴팁에 description)
 
 ---
 
-### 2-4. 배포 업데이트 (Priority 2 완료 후)
+### 2-4. 배포 업데이트
 
-- [ ] `python-server/` 변경 사항 commit → GitHub push → Railway 자동 재배포 확인
-- [ ] `node-server/` 변경 사항 commit → GitHub push → Vercel 자동 재배포 확인
-- [ ] 배포 후 E2E 검증:
-  - Vercel 대시보드에서 CSV 업로드 → 군집 뱃지 4종 정상 표시
-  - 추천 액션이 위험도 × 군집 조합에 따라 다르게 표시
+- [x] 변경 사항 commit → GitHub push → PR #8 머지 → main 동기화
+- [ ] Railway 자동 재배포 확인 (push 후 자동 트리거됨)
+- [ ] 배포 후 E2E 검증: Vercel 대시보드에서 군집 뱃지 4종 정상 표시
 
 ---
 
 ### Priority 2 완료 조건
-- [ ] `python train.py` 실행 시 `kmeans.pkl`, `cluster_scaler.pkl` 생성
-- [ ] groupby 출력으로 군집 번호 검증 완료
-- [ ] `/predict-batch` 응답에 `cluster_id`, `cluster_name`, `cluster_color` 포함
-- [ ] `/predict-single` 응답에 동일 군집 필드 포함
-- [ ] `summary.cluster_distribution` 4개 키 포함
-- [ ] 대시보드 테이블 군집 뱃지 4종 색상(초록/빨강/파랑/주황) 정상 표시
-- [ ] 8가지 위험도 × 군집 조합 각각 다른 추천 액션 표시
+- [x] `python train.py` 실행 시 `kmeans.pkl`, `cluster_scaler.pkl` 생성
+- [x] groupby 출력으로 군집 번호 검증 완료
+- [x] `/predict-batch` 응답에 `cluster_id`, `cluster_name`, `cluster_color` 포함
+- [x] `/predict-single` 응답에 동일 군집 필드 포함
+- [x] `summary.cluster_distribution` 4개 키 포함
+- [x] 대시보드 테이블 군집 뱃지 4종 색상(초록/빨강/파랑/주황) renderClusterBadge() 연결
+- [x] 8가지 위험도 × 군집 조합 각각 다른 추천 액션 표시
 
 ---
 
@@ -548,10 +503,9 @@ Priority 1 완료 ✅ (PR #6, 2026-06-16)
   → branch: improvement/priority1-design-branding → main 머지 완료
   → Vercel 자동 재배포 완료
 
-Priority 2 완료 ⬜
-  → git add python-server/ node-server/ && git commit && git push
-  → Railway 자동 재배포 (약 3~5분) + Vercel 재배포
-  → Railway 재배포 후 /health 워밍업 확인
+Priority 2 완료 ✅ (PR #8, 2026-06-16)
+  → branch: improvement/priority2-kmeans-clustering → main 머지 완료
+  → Railway/Vercel 자동 재배포 트리거됨
 
 Priority 3 완료 ⬜
   → git add node-server/ && git commit && git push
@@ -560,8 +514,9 @@ Priority 3 완료 ⬜
 
 ### 배포 후 E2E 체크
 - [x] Priority 1: `https://node-server-tawny.vercel.app` ConnectCare 라이트 테마 확인
-- [ ] Priority 2 완료 후: `https://telchurn-production.up.railway.app/health` → `{"status":"ok"}`
-- [ ] Priority 2 완료 후: Vercel 대시보드에서 군집 뱃지 4종 표시 확인
+- [x] Priority 2: PR #8 머지 완료, Railway/Vercel 재배포 트리거됨
+- [ ] Priority 2 배포 후: `https://telchurn-production.up.railway.app/health` 워밍업 확인
+- [ ] Priority 2 배포 후: Vercel 대시보드에서 군집 뱃지 4종 표시 확인
 - [ ] Priority 3 완료 후: What-if 패널 전체 기능 E2E 확인
 
 ---
