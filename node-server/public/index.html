@@ -247,6 +247,70 @@
     </main>
   </div>
 
+  <!-- What-if 사이드 패널 -->
+  <div id="whatif-overlay" class="whatif-overlay hidden"></div>
+  <aside id="whatif-panel" class="whatif-panel">
+    <div class="whatif-header">
+      <div>
+        <div id="wif-customer-id" class="wif-customer-id"></div>
+        <div id="wif-cluster-name" class="wif-cluster-name"></div>
+      </div>
+      <button id="wif-close" class="wif-close">✕</button>
+    </div>
+
+    <div class="wif-prob-block">
+      <div class="wif-prob-label">현재 이탈 확률</div>
+      <div class="wif-prob-display" id="wif-original-prob"></div>
+    </div>
+
+    <div class="wif-controls">
+      <div class="wif-control-group">
+        <label>가입 기간 <span id="wif-tenure-val"></span>개월</label>
+        <input type="range" id="wif-tenure" min="0" max="72" step="1">
+      </div>
+      <div class="wif-control-group">
+        <label>월 요금 $<span id="wif-monthly-val"></span></label>
+        <input type="range" id="wif-monthly" min="20" max="120" step="1">
+      </div>
+      <div class="wif-control-group">
+        <label>계약 유형</label>
+        <select id="wif-contract" class="wif-select">
+          <option value="Month-to-month">월간</option>
+          <option value="One year">1년</option>
+          <option value="Two year">2년</option>
+        </select>
+      </div>
+      <div class="wif-control-group">
+        <label>보안 서비스</label>
+        <div class="wif-toggle-wrap">
+          <span>미사용</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="wif-security">
+            <span class="toggle-slider"></span>
+          </label>
+          <span>사용</span>
+        </div>
+      </div>
+      <div class="wif-control-group">
+        <label>결제 방식</label>
+        <select id="wif-payment" class="wif-select">
+          <option value="Electronic check">전자수표</option>
+          <option value="Mailed check">우편수표</option>
+          <option value="Bank transfer (automatic)">자동이체</option>
+          <option value="Credit card (automatic)">자동카드</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="wif-result-block">
+      <div class="wif-prob-label">조정 후 이탈 확률</div>
+      <div class="wif-prob-display" id="wif-adjusted-prob">—</div>
+      <div id="wif-delta" class="wif-delta"></div>
+      <div id="wif-cluster-change" class="wif-cluster-change hidden"></div>
+      <div class="wif-action-card" id="wif-action"></div>
+    </div>
+  </aside>
+
   <script src="dashboard.js"></script>
 </body>
 </html>

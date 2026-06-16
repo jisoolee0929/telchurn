@@ -5,6 +5,10 @@ let allResults    = [];
 let currentFilter = 'all';
 let chartInstance = null;
 let parsedCustomers = [];
+let originalProbability  = 0;
+let originalClusterId    = null;
+let currentPanelCustomer = null;
+let recalcTimer          = null;
 
 // ── Cluster Labels (mirror of app.py CLUSTER_LABELS) ─────────────────────
 const CLUSTER_LABELS = {
@@ -28,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initManualForm();
   initFilters();
   initBatchButton();
+  initWhatIfPanel();
 });
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
@@ -138,6 +143,13 @@ async function runBatchPredict(customers) {
     });
     if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
     const { results, summary } = await res.json();
+    results.forEach((r, i) => {
+      r.tenure         = customers[i].tenure;
+      r.MonthlyCharges = customers[i].MonthlyCharges;
+      r.TotalCharges   = customers[i].TotalCharges;
+      r.OnlineSecurity = customers[i].OnlineSecurity;
+      r.PaymentMethod  = customers[i].PaymentMethod;
+    });
     renderResults(results, summary);
   } catch (err) {
     showError(err.message);
@@ -177,6 +189,11 @@ function initManualForm() {
       });
       if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
       const result = await res.json();
+      result.tenure         = customer.tenure;
+      result.MonthlyCharges = customer.MonthlyCharges;
+      result.TotalCharges   = customer.TotalCharges;
+      result.OnlineSecurity = customer.OnlineSecurity;
+      result.PaymentMethod  = customer.PaymentMethod;
       renderResults([result], {
         total:     1,
         high_risk: result.risk_level === 'high' ? 1 : 0,
@@ -317,11 +334,12 @@ function renderTable() {
   document.getElementById('table-empty').classList.add('hidden');
   document.getElementById('ctable').classList.remove('hidden');
 
-  const rows = currentFilter === 'all'
-    ? allResults
-    : allResults.filter(r => r.risk_level === currentFilter);
+  const indexed = allResults.map((r, i) => [r, i]);
+  const displayRows = currentFilter === 'all'
+    ? indexed
+    : indexed.filter(([r]) => r.risk_level === currentFilter);
 
-  document.getElementById('table-body').innerHTML = rows.map((r, i) => {
+  document.getElementById('table-body').innerHTML = displayRows.map(([r, origIdx], rowIdx) => {
     const pct     = (r.churn_probability * 100).toFixed(1);
     const isHigh  = r.risk_level === 'high';
     const factors = r.key_risk_factors?.length
@@ -332,7 +350,7 @@ function renderTable() {
     const evDesc  = r.recommended_event?.description ? ` title="${r.recommended_event.description}"` : '';
 
     return `
-      <tr style="animation-delay:${i * 25}ms">
+      <tr data-index="${origIdx}" style="animation-delay:${rowIdx * 25}ms">
         <td><span class="cid">${r.customer_id || '—'}</span></td>
         <td>
           <div class="prob-cell">
@@ -363,4 +381,161 @@ function showError(msg) {
 
 function clearError() {
   document.getElementById('error-msg').classList.add('hidden');
+}
+
+// ── What-if Panel ─────────────────────────────────────────────────────────
+function initWhatIfPanel() {
+  document.getElementById('wif-close').addEventListener('click', closeWhatIfPanel);
+  document.getElementById('whatif-overlay').addEventListener('click', closeWhatIfPanel);
+
+  const tenureSlider  = document.getElementById('wif-tenure');
+  const monthlySlider = document.getElementById('wif-monthly');
+
+  tenureSlider.addEventListener('input', () => {
+    document.getElementById('wif-tenure-val').textContent = tenureSlider.value;
+    scheduleRecalc();
+  });
+
+  monthlySlider.addEventListener('input', () => {
+    document.getElementById('wif-monthly-val').textContent = monthlySlider.value;
+    scheduleRecalc();
+  });
+
+  document.getElementById('wif-contract').addEventListener('change', recalculate);
+  document.getElementById('wif-payment').addEventListener('change', recalculate);
+  document.getElementById('wif-security').addEventListener('change', recalculate);
+
+  document.getElementById('table-body').addEventListener('click', e => {
+    const row = e.target.closest('tr[data-index]');
+    if (!row) return;
+    openWhatIfPanel(allResults[parseInt(row.dataset.index)]);
+  });
+}
+
+function openWhatIfPanel(result) {
+  originalProbability   = result.churn_probability;
+  originalClusterId     = result.cluster_id;
+  currentPanelCustomer  = result;
+  renderPanel(result);
+  document.getElementById('whatif-overlay').classList.remove('hidden');
+  document.getElementById('whatif-panel').classList.add('panel-open');
+}
+
+function closeWhatIfPanel() {
+  document.getElementById('whatif-overlay').classList.add('hidden');
+  document.getElementById('whatif-panel').classList.remove('panel-open');
+}
+
+function renderPanel(result) {
+  document.getElementById('wif-customer-id').textContent  = result.customer_id || '—';
+  document.getElementById('wif-cluster-name').textContent = result.cluster_name || '';
+
+  const origEl = document.getElementById('wif-original-prob');
+  origEl.textContent = (result.churn_probability * 100).toFixed(1) + '%';
+  origEl.style.color = result.risk_level === 'high' ? 'var(--danger)' : 'var(--safe)';
+
+  const tenure  = result.tenure         ?? 0;
+  const monthly = result.MonthlyCharges ?? 70;
+
+  const tenureSlider  = document.getElementById('wif-tenure');
+  const monthlySlider = document.getElementById('wif-monthly');
+  tenureSlider.value  = tenure;
+  monthlySlider.value = monthly;
+  document.getElementById('wif-tenure-val').textContent  = tenure;
+  document.getElementById('wif-monthly-val').textContent = monthly;
+
+  document.getElementById('wif-contract').value   = result.Contract || 'Month-to-month';
+  document.getElementById('wif-security').checked = result.OnlineSecurity === 'Yes';
+  document.getElementById('wif-payment').value    = result.PaymentMethod  || 'Electronic check';
+
+  const adjEl = document.getElementById('wif-adjusted-prob');
+  adjEl.textContent  = '—';
+  adjEl.style.color  = '';
+  const deltaEl = document.getElementById('wif-delta');
+  deltaEl.textContent = '';
+  deltaEl.className   = 'wif-delta';
+  document.getElementById('wif-cluster-change').classList.add('hidden');
+  document.getElementById('wif-action').innerHTML = '';
+}
+
+function scheduleRecalc() {
+  clearTimeout(recalcTimer);
+  recalcTimer = setTimeout(recalculate, 300);
+}
+
+async function recalculate() {
+  if (!currentPanelCustomer) return;
+
+  const tenure   = parseInt(document.getElementById('wif-tenure').value);
+  const monthly  = parseFloat(document.getElementById('wif-monthly').value);
+  const contract = document.getElementById('wif-contract').value;
+  const security = document.getElementById('wif-security').checked ? 'Yes' : 'No';
+  const payment  = document.getElementById('wif-payment').value;
+  const total    = monthly * tenure;
+
+  const payload = {
+    ...currentPanelCustomer,
+    tenure,
+    MonthlyCharges:    monthly,
+    TotalCharges:      total,
+    avg_monthly_spend: tenure > 0 ? total / tenure : 0,
+    Contract:          contract,
+    OnlineSecurity:    security,
+    PaymentMethod:     payment,
+  };
+
+  try {
+    const res = await fetch('/api/predict-single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return;
+    const result = await res.json();
+    updateProbabilityDisplay(result.churn_probability);
+    updateActionDisplay(result.recommended_event);
+    if (result.cluster_id !== originalClusterId) {
+      showClusterChangeNotice(originalClusterId, result.cluster_id);
+    } else {
+      document.getElementById('wif-cluster-change').classList.add('hidden');
+    }
+  } catch { /* silent */ }
+}
+
+function updateProbabilityDisplay(newProb) {
+  const el = document.getElementById('wif-adjusted-prob');
+  el.textContent = (newProb * 100).toFixed(1) + '%';
+  el.style.color  = newProb >= 0.5 ? 'var(--danger)' : 'var(--safe)';
+
+  const delta   = newProb - originalProbability;
+  const deltaEl = document.getElementById('wif-delta');
+  if (Math.abs(delta) < 0.001) {
+    deltaEl.textContent = '변화 없음';
+    deltaEl.className   = 'wif-delta';
+  } else if (delta < 0) {
+    deltaEl.textContent = `▼ ${Math.abs(delta * 100).toFixed(1)}%p 감소`;
+    deltaEl.className   = 'wif-delta delta-down';
+  } else {
+    deltaEl.textContent = `▲ ${(delta * 100).toFixed(1)}%p 증가`;
+    deltaEl.className   = 'wif-delta delta-up';
+  }
+}
+
+function updateActionDisplay(event) {
+  if (!event) return;
+  document.getElementById('wif-action').innerHTML = `
+    <div class="wif-action-title">${event.title}</div>
+    <div class="wif-action-desc">${event.description}</div>
+    <div class="wif-action-trigger">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      ${event.trigger_condition}
+    </div>`;
+}
+
+function showClusterChangeNotice(oldId, newId) {
+  const el = document.getElementById('wif-cluster-change');
+  el.textContent = `군집 변경: ${CLUSTER_LABELS[oldId]?.name || oldId} → ${CLUSTER_LABELS[newId]?.name || newId}`;
+  el.classList.remove('hidden');
 }
