@@ -5,19 +5,29 @@
 
 ---
 
+## 진행 현황
+
+| Priority | 내용 | 상태 | PR | 완료일 |
+|---|---|---|---|---|
+| 1 | 디자인 개선 + ConnectCare 브랜딩 | ✅ 완료 | [#6](https://github.com/jisoolee0929/telchurn/pull/6) | 2026-06-16 |
+| 2 | K-means 군집화 (k=4) 추가 | ⬜ 미완료 | — | — |
+| 3 | What-if 시뮬레이터 | ⬜ 미완료 | — | — |
+
+---
+
 ## 전체 흐름 요약
 
 ```
-[Priority 1] 디자인 개선 + ConnectCare 브랜딩
+[Priority 1] ✅ 디자인 개선 + ConnectCare 브랜딩
     → node-server/public/ 파일 전체 수정
     → 라이트 테마 + KPI 카드 4개 + 레이아웃 재구성
 
-[Priority 2] K-means 군집화 (k=4) 추가
+[Priority 2] ⬜ K-means 군집화 (k=4) 추가
     → python-server/train.py: KMeans 학습 + pkl 저장
     → python-server/app.py: CLUSTER_LABELS + ACTION_MAP + 응답 스키마 확장
     → node-server/public/dashboard.js: 군집 뱃지 렌더링
 
-[Priority 3] What-if 시뮬레이터
+[Priority 3] ⬜ What-if 시뮬레이터
     → node-server/public/index.html: 사이드 패널 HTML
     → node-server/public/dashboard.js: 패널 로직 + 실시간 API 호출
     → node-server/public/style.css: 패널 + 슬라이더 스타일
@@ -25,148 +35,128 @@
 
 ---
 
-## Priority 1 — 디자인 개선 + ConnectCare 브랜딩
+## Priority 1 — 디자인 개선 + ConnectCare 브랜딩 ✅ 완료
+
+> **완료일**: 2026-06-16 | **PR**: [#6](https://github.com/jisoolee0929/telchurn/pull/6) | **커밋**: `42031b9`
 
 **목표**: 다크 테마 → 라이트 전문 통신사 대시보드 스타일 전환
 
 ### 1-1. `style.css` 전면 재작성
 
 #### CSS 변수 (루트 정의)
-- [ ] `--primary: #1A6FE8`, `--bg-light: #F0F4FF`, `--bg-white: #FFFFFF`
-- [ ] `--danger: #E24B4A`, `--safe: #3B9E5F`
-- [ ] `--text-main: #1A1D2E`, `--text-sub: #6B7280`
-- [ ] `--border: #E5E7EB`, `--shadow: 0 1px 4px rgba(0,0,0,0.08)`
-- [ ] `--radius-card: 12px`, `--radius-btn: 8px`
-- [ ] 기존 다크 변수(`--bg`, `--accent` 등) 전부 제거
+- [x] `--primary: #1A6FE8`, `--bg-white: #FFFFFF`, `--bg: #F8FAFC`
+- [x] `--danger: #E24B4A`, `--safe: #3B9E5F`
+- [x] `--text: #1A1D2E`, `--text-sub: #6B7280`
+- [x] `--border: #E5E7EB`, `--shadow: 0 1px 4px rgba(0,0,0,0.08)`
+- [x] `--radius: 12px`, `--radius-sm: 8px`
+- [x] 기존 다크 변수(`--bg`, `--accent`, `--surface` 등) 전부 제거
 
 #### 레이아웃 구조
-- [ ] `body`: 배경 `#F8FAFC`, 폰트 `Pretendard, system-ui`
-- [ ] `.header`: 흰 배경 + 하단 1px `--border` 구분선 + `padding 0 32px`
-  - 좌: `.logo` (ConnectCare 텍스트 로고 + 슬로건)
-  - 우: (여백)
-- [ ] `.kpi-grid`: 4컬럼 그리드, 상단 배치
-- [ ] `.main-grid`: 2컬럼 (차트 280px 고정 | 테이블 flex 1)
-- [ ] `.input-section`: 하단, 탭(CSV / 수동 입력) 포함
+- [x] `body`: 배경 `#F8FAFC`, 폰트 `Pretendard Variable, system-ui`
+- [x] `.header`: sticky 흰 배경 + 하단 1px `--border` 구분선
+  - 좌: `.logo` (CC 마크 + ConnectCare 텍스트 + 슬로건)
+  - 우: model-badge (Logistic Regression · Active)
+- [x] `.kpi-grid`: 4컬럼 그리드, 상단 배치
+- [x] `.main-grid`: 2컬럼 (280px 고정 | flex 1)
+- [x] `.input-section`: 하단, 탭(CSV / 수동 입력) 포함
 
 #### 카드 공통 스타일
-- [ ] `.card`: `background #FFF`, `border 1px solid --border`, `border-radius --radius-card`, `box-shadow --shadow`
-- [ ] `.kpi-card`: 숫자(`font-size 2rem, font-weight 700`) + 라벨(`font-size 0.85rem, color --text-sub`)
-- [ ] `.kpi-card.danger` 숫자 색상: `--danger`
-- [ ] `.kpi-card.safe` 숫자 색상: `--safe`
+- [x] `.card`: `background #FFF`, `border 1px solid --border`, `border-radius 12px`, `box-shadow --shadow`
+- [x] `.kpi-card`: 숫자(`font-size 2rem, font-weight 800`) + 라벨(`font-size 12px, color --text-sub`)
+- [x] `.kpi-card.kpi-danger` 숫자 색상: `--danger`
+- [x] `.kpi-card.kpi-safe` 숫자 색상: `--safe`
 
 #### 테이블 스타일
-- [ ] `thead`: `background #F8FAFC`, `font-size 0.8rem`, `text-transform uppercase`, `color --text-sub`
-- [ ] 홀수 행: `#FFFFFF`, 짝수 행: `#F8FAFC`
-- [ ] 호버: `background #EFF6FF`
+- [x] `thead`: `background #F8FAFC`, `font-size 11px`, `text-transform uppercase`, `color --text-sub`
+- [x] 홀수 행: `#FFFFFF`, 짝수 행: `#F8FAFC` (`nth-child(even)`)
+- [x] 호버: `background var(--primary-dim)` (#1A6FE8 8% 투명)
 
 #### 뱃지 스타일
-- [ ] `.badge-high`: `background #FDECEA`, `color #E24B4A`, `border-radius 6px`, `padding 2px 8px`
-- [ ] `.badge-low`: `background #ECFDF5`, `color #3B9E5F`
-- [ ] `.badge-cluster-green/red/blue/orange`: 군집 4종 색상별 정의
+- [x] `.badge-high`: `background var(--danger-dim)`, `color var(--danger)`, `border-radius 100px`
+- [x] `.badge-low`: `background var(--safe-dim)`, `color var(--safe)`
+- [x] `.badge-cluster-green/red/blue/orange/gray`: 군집 5종 색상별 정의
   - green: `#ECFDF5 / #3B9E5F`
-  - red: `#FDECEA / #E24B4A`
+  - red: `#FEF2F2 / #E24B4A`
   - blue: `#EFF6FF / #1A6FE8`
   - orange: `#FFF7ED / #EA7C2A`
+  - gray: `--bg / --text-light` (Priority 2 전 placeholder용)
 
 #### 버튼 스타일
-- [ ] `.btn-primary`: `background --primary`, `color #FFF`, `border-radius --radius-btn`, `padding 8px 20px`
-- [ ] `.btn-outline`: 테두리 `--primary`, 텍스트 `--primary`, 배경 투명
+- [x] `.btn-primary`: `background --primary`, `color #FFF`, `border-radius --radius-sm`, `padding 11px 26px`
+- [x] `.btn-outline`: `border 1px solid --border`, 텍스트 `--text`, hover 시 `--primary`
 
 #### 이탈 확률 게이지 바
-- [ ] `.prob-bar`: `background #F3F4F6`, `border-radius 4px`, `height 6px`
-- [ ] `.prob-bar-fill`: `background --danger`(high) / `--safe`(low), `transition width 0.4s`
+- [x] `.prob-bar`: `background --border-light`, `border-radius 3px`, `height 5px`
+- [x] `.prob-bar-fill.high`: `background --danger` / `.prob-bar-fill.low`: `background --safe`
 
 #### 반응형
-- [ ] 900px: `.main-grid` → 1컬럼 (차트 위, 테이블 아래)
-- [ ] 680px: `.kpi-grid` → 2컬럼
-- [ ] 480px: `.kpi-grid` → 1컬럼, 패딩 축소
+- [x] 900px: `.main-grid` → 1컬럼
+- [x] 680px: `.kpi-grid` → 2컬럼
+- [x] 480px: `.kpi-grid` → 1컬럼, 패딩 축소
 
 ---
 
 ### 1-2. `index.html` 레이아웃 재구성
 
 #### 헤더
-- [ ] 기존 헤더 텍스트 → ConnectCare 브랜드로 교체
-  ```html
-  <header class="header">
-    <div class="logo">
-      <span class="logo-mark">CC</span>
-      <div>
-        <div class="logo-name">ConnectCare</div>
-        <div class="logo-slogan">고객을 먼저 생각하는 통신사</div>
-      </div>
-    </div>
-  </header>
-  ```
+- [x] 기존 ChurnSight 로고 → ConnectCare 브랜드로 교체
+  - `.logo-mark` (CC 파란 사각 배지) + `.logo-name` + `.logo-slogan`
 
 #### KPI 카드 섹션 추가
-- [ ] 헤더 아래에 `.kpi-grid` 섹션 삽입
-  ```html
-  <section class="kpi-grid">
-    <div class="kpi-card" id="kpi-total">...</div>   <!-- 총 고객 수 -->
-    <div class="kpi-card danger" id="kpi-high">...</div>  <!-- 고위험 -->
-    <div class="kpi-card safe" id="kpi-low">...</div>     <!-- 저위험 -->
-    <div class="kpi-card" id="kpi-avg">...</div>     <!-- 평균 이탈확률 -->
-  </section>
-  ```
+- [x] 헤더 아래에 `.kpi-grid` 항상 표시 (초기값 `—`)
+  - `#kpi-total` / `#kpi-high` / `#kpi-low` / `#kpi-avg`
 
 #### 메인 영역 재배치
-- [ ] `.main-grid` 2컬럼 레이아웃: 좌(차트) + 우(테이블)
-- [ ] 테이블 컬럼 헤더: `고객 ID | 이탈 확률 | 위험도 | 군집 | 주요 위험 요인 | 추천 액션`
-  - 군집 컬럼은 Priority 2 전까지 `-` 표시
+- [x] `.main-grid` 2컬럼: 좌(`.left-col`: 차트 + 이벤트 카드) + 우(`.right-col`: 테이블)
+- [x] 차트 빈 상태: `#chart-empty` 표시, `#chart-wrap` 기본 hidden
+- [x] 테이블 빈 상태: `#table-empty` 표시, `#ctable` 기본 hidden
+- [x] 테이블 컬럼: `고객 ID | 이탈 확률 | 위험도 | 군집 | 주요 위험 요인 | 추천 액션`
 
 #### 데이터 입력 영역 (하단)
-- [ ] 기존 탭(CSV / 수동 입력) 구조 유지, `.input-section` 클래스로 감싸기
-- [ ] 탭 버튼 스타일 → `.btn-primary` / `.btn-outline` 적용
+- [x] `.input-section` > `.input-card` 구조로 하단 배치
+- [x] 탭 버튼: CSV 업로드 / 수동 입력
 
 #### CDN 변경
-- [ ] Exo 2 / JetBrains Mono 폰트 CDN 제거
-- [ ] Pretendard CDN 추가: `https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css`
+- [x] Exo 2 / JetBrains Mono 폰트 CDN 제거
+- [x] Pretendard Variable CDN 적용: `cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css`
 
 ---
 
 ### 1-3. `dashboard.js` 렌더링 로직 업데이트
 
 #### KPI 카드 업데이트 함수 추가
-- [ ] `updateKPICards(summary, results)` 함수 작성
+- [x] `updateKPICards(summary, results)` 함수 작성
   - `#kpi-total` ← `summary.total`
   - `#kpi-high` ← `summary.high_risk`
   - `#kpi-low` ← `summary.low_risk`
-  - `#kpi-avg` ← `results` 배열에서 평균 `churn_probability` 계산 (소수점 1자리 %)
+  - `#kpi-avg` ← `results` 배열 평균 `churn_probability` (소수점 1자리 %)
 
 #### 테이블 렌더링 업데이트
-- [ ] `renderTable(results)` 에 군집 컬럼 셀 추가
-  - Priority 2 전: `<td>-</td>` placeholder
-  - 행 클릭 이벤트 바인딩 추가 (Priority 3 준비, 빈 핸들러)
+- [x] `renderTable()` — `allResults` 비어있으면 `#table-empty` 표시, `#ctable` hidden
+- [x] 데이터 있으면 `#table-empty` hidden, `#ctable` 표시
+- [x] 군집 컬럼: `r.cluster_name` 있으면 `badge-cluster-{color}`, 없으면 `badge-cluster-gray` (`—`)
 
 #### 이탈 확률 표시
-- [ ] 숫자 `XX.X%` + 아래에 게이지 바 렌더링
-  ```javascript
-  function renderProbCell(prob, riskLevel) {
-    const pct = (prob * 100).toFixed(1);
-    const color = riskLevel === 'high' ? 'var(--danger)' : 'var(--safe)';
-    return `<div class="prob-text">${pct}%</div>
-            <div class="prob-bar"><div class="prob-bar-fill"
-              style="width:${pct}%;background:${color}"></div></div>`;
-  }
-  ```
+- [x] `.prob-cell` 구조: `<span class="prob-text">XX.X%</span>` + `.prob-bar` / `.prob-bar-fill.high|low`
 
-#### 파이 차트 → 도넛 차트 색상 업데이트
-- [ ] 기존 색상 → `#E24B4A`(high) / `#3B9E5F`(low) 로 변경
+#### 차트 렌더링
+- [x] `renderChart()` 호출 시 `#chart-empty` hidden, `#chart-wrap` 표시
+- [x] 색상: `['#E24B4A', '#3B9E5F']`
+- [x] 범례 폰트: `'Pretendard Variable', system-ui`
 
-#### 이벤트 카드 스타일 업데이트
-- [ ] 카드 좌측 border-color: high=`--danger`, low=`--safe`
-- [ ] 아이콘/제목/설명/발동조건 표시 구조 유지
+#### 이벤트 카드
+- [x] `ec-high` / `ec-low` 좌측 보더: `--danger` / `--safe`
+- [x] 기존 아이콘/제목/설명/발동조건 구조 유지
 
 ---
 
 ### Priority 1 완료 조건
-- [ ] 흰 배경 라이트 테마 전체 적용 (다크 변수 잔재 없음)
-- [ ] ConnectCare 로고·슬로건 헤더 표시
-- [ ] KPI 카드 4개 — 총 고객 / 고위험 / 저위험 / 평균 이탈확률 렌더링
-- [ ] 테이블 게이지 바 + 군집 컬럼 자리(placeholder) 표시
-- [ ] 반응형 레이아웃 900px/680px/480px 브레이크포인트 적용
-- [ ] CSV 업로드 / 수동 입력 / 차트 기존 기능 정상 동작 유지
+- [x] 흰 배경 라이트 테마 전체 적용 (다크 변수 잔재 없음)
+- [x] ConnectCare 로고·슬로건 헤더 표시
+- [x] KPI 카드 4개 — 총 고객 / 고위험 / 저위험 / 평균 이탈확률 렌더링
+- [x] 테이블 게이지 바 + 군집 컬럼 자리(placeholder `—`) 표시
+- [x] 반응형 레이아웃 900px/680px/480px 브레이크포인트 적용
+- [x] CSV 업로드 / 수동 입력 / 차트 기존 기능 정상 동작 유지
 
 ---
 
@@ -554,23 +544,25 @@ with open('cluster_scaler.pkl', 'wb') as f:
 
 ### 각 우선순위 완료 후 즉시 배포
 ```
-Priority 1 완료
-  → git add node-server/ && git commit && git push
-  → Vercel 자동 재배포 (약 1~2분)
+Priority 1 완료 ✅ (PR #6, 2026-06-16)
+  → branch: improvement/priority1-design-branding → main 머지 완료
+  → Vercel 자동 재배포 완료
 
-Priority 2 완료
+Priority 2 완료 ⬜
   → git add python-server/ node-server/ && git commit && git push
   → Railway 자동 재배포 (약 3~5분) + Vercel 재배포
   → Railway 재배포 후 /health 워밍업 확인
 
-Priority 3 완료
+Priority 3 완료 ⬜
   → git add node-server/ && git commit && git push
   → Vercel 자동 재배포
 ```
 
 ### 배포 후 E2E 체크
-- [ ] `https://telchurn-production.up.railway.app/health` → `{"status":"ok"}`
-- [ ] `https://node-server-tawny.vercel.app` 대시보드 전체 기능 확인
+- [x] Priority 1: `https://node-server-tawny.vercel.app` ConnectCare 라이트 테마 확인
+- [ ] Priority 2 완료 후: `https://telchurn-production.up.railway.app/health` → `{"status":"ok"}`
+- [ ] Priority 2 완료 후: Vercel 대시보드에서 군집 뱃지 4종 표시 확인
+- [ ] Priority 3 완료 후: What-if 패널 전체 기능 E2E 확인
 
 ---
 
