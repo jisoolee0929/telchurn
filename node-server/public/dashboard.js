@@ -6,6 +6,14 @@ let currentFilter = 'all';
 let chartInstance = null;
 let parsedCustomers = [];
 
+// ── Cluster Labels (mirror of app.py CLUSTER_LABELS) ─────────────────────
+const CLUSTER_LABELS = {
+  0: { name: '장기 저비용 안정군',    color: 'green'  },
+  1: { name: '단기 고비용 이탈위험군', color: 'red'    },
+  2: { name: '장기 고비용 우량군',    color: 'blue'   },
+  3: { name: '신규 저비용 관찰군',    color: 'orange' },
+};
+
 // ── Icons ─────────────────────────────────────────────────────────────────
 const ICONS = {
   gift: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`,
@@ -277,6 +285,16 @@ function renderEventCards(results) {
   }).join('');
 }
 
+// ── Cluster Badge ─────────────────────────────────────────────────────────
+function renderClusterBadge(result) {
+  if (!result.cluster_name) {
+    return '<span class="badge badge-cluster-gray">—</span>';
+  }
+  const color = result.cluster_color || 'gray';
+  const desc  = result.cluster_description ? ` title="${result.cluster_description}"` : '';
+  return `<span class="badge badge-cluster-${color}"${desc}>${result.cluster_name}</span>`;
+}
+
 // ── Table ─────────────────────────────────────────────────────────────────
 function initFilters() {
   document.addEventListener('click', e => {
@@ -310,9 +328,8 @@ function renderTable() {
       ? r.key_risk_factors.map(f => `<span class="ftag">${f}</span>`).join('')
       : '<span class="no-data">—</span>';
 
-    const clusterBadge = r.cluster_name
-      ? `<span class="badge badge-cluster-${r.cluster_color || 'gray'}">${r.cluster_name}</span>`
-      : '<span class="badge badge-cluster-gray">—</span>';
+    const evTitle = r.recommended_event?.title || '—';
+    const evDesc  = r.recommended_event?.description ? ` title="${r.recommended_event.description}"` : '';
 
     return `
       <tr style="animation-delay:${i * 25}ms">
@@ -326,9 +343,9 @@ function renderTable() {
           </div>
         </td>
         <td><span class="badge ${isHigh ? 'badge-high' : 'badge-low'}">${isHigh ? '고위험' : '저위험'}</span></td>
-        <td>${clusterBadge}</td>
+        <td>${renderClusterBadge(r)}</td>
         <td class="td-factors">${factors}</td>
-        <td><span class="ev-name ${isHigh ? 'ev-high' : 'ev-low'}">${r.recommended_event?.title || '—'}</span></td>
+        <td><span class="ev-name ${isHigh ? 'ev-high' : 'ev-low'}"${evDesc}>${evTitle}</span></td>
       </tr>`;
   }).join('');
 }
