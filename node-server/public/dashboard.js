@@ -1,18 +1,18 @@
 'use strict';
 
-// ── State ─────────────────────────────────────────────────────────────────────
-let allResults = [];
+// ── State ─────────────────────────────────────────────────────────────────
+let allResults    = [];
 let currentFilter = 'all';
 let chartInstance = null;
 let parsedCustomers = [];
 
-// ── Icons ─────────────────────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────
 const ICONS = {
   gift: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`,
   star: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
 };
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initDropZone();
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initBatchButton();
 });
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────────────────
 function initTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -34,7 +34,7 @@ function initTabs() {
   });
 }
 
-// ── Drop Zone ─────────────────────────────────────────────────────────────────
+// ── Drop Zone ─────────────────────────────────────────────────────────────
 function initDropZone() {
   const zone  = document.getElementById('drop-zone');
   const input = document.getElementById('file-input');
@@ -71,17 +71,17 @@ function handleFile(file) {
         const tenure = Number(row.tenure) || 0;
         const total  = Number(row.TotalCharges) || 0;
         return {
-          customer_id:      row.customer_id || '',
+          customer_id:       row.customer_id || '',
           tenure,
-          MonthlyCharges:   Number(row.MonthlyCharges) || 0,
-          TotalCharges:     total,
+          MonthlyCharges:    Number(row.MonthlyCharges) || 0,
+          TotalCharges:      total,
           avg_monthly_spend: tenure > 0 ? total / tenure : 0,
-          PaymentMethod:    row.PaymentMethod   || '',
-          OnlineSecurity:   row.OnlineSecurity  || 'No',
-          TechSupport:      row.TechSupport     || 'No',
-          StreamingTV:      row.StreamingTV     || 'No',
-          StreamingMovies:  row.StreamingMovies || 'No',
-          SeniorCitizen:    Number(row.SeniorCitizen) || 0,
+          PaymentMethod:     row.PaymentMethod   || '',
+          OnlineSecurity:    row.OnlineSecurity  || 'No',
+          TechSupport:       row.TechSupport     || 'No',
+          StreamingTV:       row.StreamingTV     || 'No',
+          StreamingMovies:   row.StreamingMovies || 'No',
+          SeniorCitizen:     Number(row.SeniorCitizen) || 0,
         };
       });
 
@@ -95,7 +95,7 @@ function handleFile(file) {
   });
 }
 
-// ── Template Download ─────────────────────────────────────────────────────────
+// ── Template Download ─────────────────────────────────────────────────────
 function initTemplateDownload() {
   document.getElementById('template-download').addEventListener('click', e => {
     e.preventDefault();
@@ -113,7 +113,7 @@ function initTemplateDownload() {
   });
 }
 
-// ── Batch Button ──────────────────────────────────────────────────────────────
+// ── Batch Button ──────────────────────────────────────────────────────────
 function initBatchButton() {
   document.getElementById('batch-predict-btn').addEventListener('click', () => {
     if (parsedCustomers.length) runBatchPredict(parsedCustomers);
@@ -138,7 +138,7 @@ async function runBatchPredict(customers) {
   }
 }
 
-// ── Manual Form ───────────────────────────────────────────────────────────────
+// ── Manual Form ───────────────────────────────────────────────────────────
 function initManualForm() {
   document.getElementById('manual-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -147,17 +147,17 @@ function initManualForm() {
     const total  = Number(fd.get('TotalCharges')) || 0;
 
     const customer = {
-      customer_id:      fd.get('customer_id') || 'C001',
+      customer_id:       fd.get('customer_id') || 'C001',
       tenure,
-      MonthlyCharges:   Number(fd.get('MonthlyCharges')) || 0,
-      TotalCharges:     total,
+      MonthlyCharges:    Number(fd.get('MonthlyCharges')) || 0,
+      TotalCharges:      total,
       avg_monthly_spend: tenure > 0 ? total / tenure : 0,
-      PaymentMethod:    fd.get('PaymentMethod'),
-      OnlineSecurity:   fd.get('OnlineSecurity'),
-      TechSupport:      fd.get('TechSupport'),
-      StreamingTV:      fd.get('StreamingTV'),
-      StreamingMovies:  fd.get('StreamingMovies'),
-      SeniorCitizen:    Number(fd.get('SeniorCitizen')),
+      PaymentMethod:     fd.get('PaymentMethod'),
+      OnlineSecurity:    fd.get('OnlineSecurity'),
+      TechSupport:       fd.get('TechSupport'),
+      StreamingTV:       fd.get('StreamingTV'),
+      StreamingMovies:   fd.get('StreamingMovies'),
+      SeniorCitizen:     Number(fd.get('SeniorCitizen')),
     };
 
     showLoading(true);
@@ -170,7 +170,7 @@ function initManualForm() {
       if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
       const result = await res.json();
       renderResults([result], {
-        total: 1,
+        total:     1,
         high_risk: result.risk_level === 'high' ? 1 : 0,
         low_risk:  result.risk_level === 'low'  ? 1 : 0,
       });
@@ -182,28 +182,36 @@ function initManualForm() {
   });
 }
 
-// ── Render Results ────────────────────────────────────────────────────────────
+// ── Render Results ────────────────────────────────────────────────────────
 function renderResults(results, summary) {
   allResults    = [...results].sort((a, b) => b.churn_probability - a.churn_probability);
   currentFilter = 'all';
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
 
-  document.getElementById('total-count').textContent = summary.total;
-  document.getElementById('high-count').textContent  = summary.high_risk;
-  document.getElementById('low-count').textContent   = summary.low_risk;
-
+  updateKPICards(summary, results);
   renderChart(summary);
   renderEventCards(results);
   renderTable();
-
-  const section = document.getElementById('results');
-  section.classList.remove('hidden');
   clearError();
-  setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
 }
 
-// ── Chart ──────────────────────────────────────────────────────────────────────
+// ── KPI Cards ─────────────────────────────────────────────────────────────
+function updateKPICards(summary, results) {
+  document.getElementById('kpi-total').textContent = summary.total;
+  document.getElementById('kpi-high').textContent  = summary.high_risk;
+  document.getElementById('kpi-low').textContent   = summary.low_risk;
+
+  const avg = results.length
+    ? (results.reduce((s, r) => s + r.churn_probability, 0) / results.length * 100).toFixed(1) + '%'
+    : '—';
+  document.getElementById('kpi-avg').textContent = avg;
+}
+
+// ── Chart ─────────────────────────────────────────────────────────────────
 function renderChart({ high_risk, low_risk }) {
+  document.getElementById('chart-empty').classList.add('hidden');
+  document.getElementById('chart-wrap').classList.remove('hidden');
+
   if (chartInstance) chartInstance.destroy();
   chartInstance = new Chart(document.getElementById('risk-chart').getContext('2d'), {
     type: 'doughnut',
@@ -211,7 +219,7 @@ function renderChart({ high_risk, low_risk }) {
       labels: ['고위험', '저위험'],
       datasets: [{
         data: [high_risk, low_risk],
-        backgroundColor: ['#F43F5E', '#10B981'],
+        backgroundColor: ['#E24B4A', '#3B9E5F'],
         borderColor:     'transparent',
         hoverOffset: 6,
       }],
@@ -219,14 +227,14 @@ function renderChart({ high_risk, low_risk }) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '70%',
+      cutout: '68%',
       plugins: {
         legend: {
           position: 'bottom',
           labels: {
-            color: '#6B8FAA',
-            font: { family: "'DM Sans', sans-serif", size: 12 },
-            padding: 24,
+            color: '#6B7280',
+            font: { family: "'Pretendard Variable', system-ui", size: 12 },
+            padding: 20,
             usePointStyle: true,
             pointStyleWidth: 8,
           },
@@ -245,7 +253,7 @@ function renderChart({ high_risk, low_risk }) {
   });
 }
 
-// ── Event Cards ───────────────────────────────────────────────────────────────
+// ── Event Cards ───────────────────────────────────────────────────────────
 function renderEventCards(results) {
   const seen  = new Set();
   const cards = results
@@ -269,7 +277,7 @@ function renderEventCards(results) {
   }).join('');
 }
 
-// ── Table ──────────────────────────────────────────────────────────────────────
+// ── Table ─────────────────────────────────────────────────────────────────
 function initFilters() {
   document.addEventListener('click', e => {
     const btn = e.target.closest('.filter-btn');
@@ -282,6 +290,15 @@ function initFilters() {
 }
 
 function renderTable() {
+  if (allResults.length === 0) {
+    document.getElementById('table-empty').classList.remove('hidden');
+    document.getElementById('ctable').classList.add('hidden');
+    return;
+  }
+
+  document.getElementById('table-empty').classList.add('hidden');
+  document.getElementById('ctable').classList.remove('hidden');
+
   const rows = currentFilter === 'all'
     ? allResults
     : allResults.filter(r => r.risk_level === currentFilter);
@@ -293,25 +310,30 @@ function renderTable() {
       ? r.key_risk_factors.map(f => `<span class="ftag">${f}</span>`).join('')
       : '<span class="no-data">—</span>';
 
+    const clusterBadge = r.cluster_name
+      ? `<span class="badge badge-cluster-${r.cluster_color || 'gray'}">${r.cluster_name}</span>`
+      : '<span class="badge badge-cluster-gray">—</span>';
+
     return `
       <tr style="animation-delay:${i * 25}ms">
-        <td><span class="mono cid">${r.customer_id || '—'}</span></td>
+        <td><span class="cid">${r.customer_id || '—'}</span></td>
         <td>
-          <div class="prob-row">
-            <div class="prob-track">
-              <div class="prob-fill ${isHigh ? 'pf-high' : 'pf-low'}" style="width:${pct}%"></div>
+          <div class="prob-cell">
+            <span class="prob-text">${pct}%</span>
+            <div class="prob-bar">
+              <div class="prob-bar-fill ${isHigh ? 'high' : 'low'}" style="width:${pct}%"></div>
             </div>
-            <span class="mono prob-val">${pct}%</span>
           </div>
         </td>
         <td><span class="badge ${isHigh ? 'badge-high' : 'badge-low'}">${isHigh ? '고위험' : '저위험'}</span></td>
+        <td>${clusterBadge}</td>
         <td class="td-factors">${factors}</td>
         <td><span class="ev-name ${isHigh ? 'ev-high' : 'ev-low'}">${r.recommended_event?.title || '—'}</span></td>
       </tr>`;
   }).join('');
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────
 function showLoading(show) {
   document.getElementById('loading').classList.toggle('hidden', !show);
 }
