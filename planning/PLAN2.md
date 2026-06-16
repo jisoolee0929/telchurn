@@ -11,7 +11,7 @@
 |---|---|---|---|---|
 | 1 | 디자인 개선 + ConnectCare 브랜딩 | ✅ 완료 | [#6](https://github.com/jisoolee0929/telchurn/pull/6) | 2026-06-16 |
 | 2 | K-means 군집화 (k=4) 추가 | ✅ 완료 | [#8](https://github.com/jisoolee0929/telchurn/pull/8) | 2026-06-16 |
-| 3 | What-if 시뮬레이터 | ⬜ 미완료 | — | — |
+| 3 | What-if 시뮬레이터 | ✅ 완료 | [#11](https://github.com/jisoolee0929/telchurn/pull/11) | 2026-06-16 |
 
 ---
 
@@ -27,7 +27,7 @@
     → python-server/app.py: CLUSTER_LABELS + ACTION_MAP + 응답 스키마 확장
     → node-server/public/dashboard.js: 군집 뱃지 렌더링
 
-[Priority 3] ⬜ What-if 시뮬레이터
+[Priority 3] ✅ What-if 시뮬레이터
     → node-server/public/index.html: 사이드 패널 HTML
     → node-server/public/dashboard.js: 패널 로직 + 실시간 API 호출
     → node-server/public/style.css: 패널 + 슬라이더 스타일
@@ -261,10 +261,10 @@
 
 **목표**: 테이블 행 클릭 → 사이드 패널 → 슬라이더/토글 조작 → 실시간 이탈 확률 갱신
 
-### 3-1. `index.html` — 사이드 패널 HTML 추가
+### 3-1. `index.html` — 사이드 패널 HTML 추가 ✅
 
 #### 패널 오버레이 + 드로어
-- [ ] `</body>` 직전에 패널 HTML 추가
+- [x] `</body>` 직전에 패널 HTML 추가
   ```html
   <!-- What-if 사이드 패널 -->
   <div id="whatif-overlay" class="whatif-overlay hidden"></div>
@@ -336,33 +336,33 @@
 
 ---
 
-### 3-2. `dashboard.js` — 패널 로직 추가
+### 3-2. `dashboard.js` — 패널 로직 추가 ✅
 
 #### 전역 변수
-- [ ] `let originalProbability = 0;`
-- [ ] `let originalClusterId = null;`
-- [ ] `let currentPanelCustomer = null;`
-- [ ] `let recalcTimer = null;` (디바운스용)
+- [x] `let originalProbability = 0;`
+- [x] `let originalClusterId = null;`
+- [x] `let currentPanelCustomer = null;`
+- [x] `let recalcTimer = null;` (디바운스용)
 
 #### `openWhatIfPanel(customer)` 함수
-- [ ] 오버레이 + 패널 `.hidden` 제거 (슬라이드인)
-- [ ] `originalProbability`, `originalClusterId`, `currentPanelCustomer` 설정
-- [ ] `renderPanel(customer)` 호출
+- [x] 오버레이 + 패널 `.panel-open` 추가 (슬라이드인, CSS transform 방식)
+- [x] `originalProbability`, `originalClusterId`, `currentPanelCustomer` 설정
+- [x] `renderPanel(customer)` 호출
 
 #### `renderPanel(customer)` 함수
-- [ ] `#wif-customer-id` ← `customer.customer_id`
-- [ ] `#wif-cluster-name` ← `customer.cluster_name`
-- [ ] `#wif-original-prob` ← `(customer.churn_probability * 100).toFixed(1) + '%'`
-- [ ] 슬라이더 초기값: `#wif-tenure` ← `customer.tenure`, `#wif-monthly` ← `customer.MonthlyCharges`
-- [ ] 값 표시 span 업데이트: `#wif-tenure-val`, `#wif-monthly-val`
-- [ ] select 초기값: `#wif-contract` ← `customer.Contract` (없으면 `Month-to-month`)
-- [ ] checkbox: `#wif-security` ← `customer.OnlineSecurity === 'Yes'`
-- [ ] select: `#wif-payment` ← `customer.PaymentMethod`
-- [ ] `#wif-adjusted-prob` 초기화 (`-`)
-- [ ] `#wif-delta`, `#wif-cluster-change`, `#wif-action` 초기화
+- [x] `#wif-customer-id` ← `customer.customer_id`
+- [x] `#wif-cluster-name` ← `customer.cluster_name`
+- [x] `#wif-original-prob` ← `(customer.churn_probability * 100).toFixed(1) + '%'`
+- [x] 슬라이더 초기값: `#wif-tenure` ← `customer.tenure`, `#wif-monthly` ← `customer.MonthlyCharges`
+- [x] 값 표시 span 업데이트: `#wif-tenure-val`, `#wif-monthly-val`
+- [x] select 초기값: `#wif-contract` ← `customer.Contract` (없으면 `Month-to-month`)
+- [x] checkbox: `#wif-security` ← `customer.OnlineSecurity === 'Yes'`
+- [x] select: `#wif-payment` ← `customer.PaymentMethod`
+- [x] `#wif-adjusted-prob` 초기화 (`—`)
+- [x] `#wif-delta`, `#wif-cluster-change`, `#wif-action` 초기화
 
 #### `recalculate()` async 함수
-- [ ] `currentPanelCustomer` 기반으로 조정된 데이터 객체 생성
+- [x] `currentPanelCustomer` 기반으로 조정된 데이터 객체 생성
   ```javascript
   const tenure = parseInt(document.getElementById('wif-tenure').value);
   const monthly = parseFloat(document.getElementById('wif-monthly').value);
@@ -384,116 +384,101 @@
     PaymentMethod: payment
   };
   ```
-- [ ] `POST /api/predict-single` 호출
-- [ ] `updateProbabilityDisplay(result.churn_probability)` 호출
-- [ ] `updateActionDisplay(result.recommended_event)` 호출
-- [ ] 군집 변경 감지: `result.cluster_id !== originalClusterId` → `showClusterChangeNotice()`
+- [x] `POST /api/predict-single` 호출
+- [x] `updateProbabilityDisplay(result.churn_probability)` 호출
+- [x] `updateActionDisplay(result.recommended_event)` 호출
+- [x] 군집 변경 감지: `result.cluster_id !== originalClusterId` → `showClusterChangeNotice()`
 
 #### `updateProbabilityDisplay(newProb)` 함수
-- [ ] `#wif-adjusted-prob` ← `(newProb * 100).toFixed(1) + '%'`
-- [ ] delta = `newProb - originalProbability`
-- [ ] `#wif-delta`:
-  - delta < 0: `▼ ${Math.abs(delta*100).toFixed(1)}%p` (초록색)
-  - delta > 0: `▲ ${(delta*100).toFixed(1)}%p` (빨강색)
-  - delta === 0: `변화 없음` (회색)
+- [x] `#wif-adjusted-prob` ← `(newProb * 100).toFixed(1) + '%'`
+- [x] delta = `newProb - originalProbability`
+- [x] `#wif-delta`:
+  - delta < 0: `▼ ${Math.abs(delta*100).toFixed(1)}%p 감소` (초록색)
+  - delta > 0: `▲ ${(delta*100).toFixed(1)}%p 증가` (빨강색)
+  - delta ≈ 0: `변화 없음` (회색)
 
 #### `updateActionDisplay(event)` 함수
-- [ ] `#wif-action` 내용: `event.title` + `event.description` + `event.trigger_condition`
+- [x] `#wif-action` 내용: `event.title` + `event.description` + `event.trigger_condition`
 
 #### `showClusterChangeNotice(oldId, newId)` 함수
-- [ ] `#wif-cluster-change` `.hidden` 제거
-- [ ] 내용: `군집 변경: ${CLUSTER_LABELS[oldId].name} → ${CLUSTER_LABELS[newId].name}`
-- [ ] 단, `CLUSTER_LABELS`는 JS 내 상수로 복사 정의
+- [x] `#wif-cluster-change` `.hidden` 제거
+- [x] 내용: `군집 변경: ${CLUSTER_LABELS[oldId].name} → ${CLUSTER_LABELS[newId].name}`
+- [x] `CLUSTER_LABELS`는 JS 파일 상단에 이미 정의됨 (Priority 2에서 추가)
 
 #### 이벤트 리스너 바인딩
-- [ ] 슬라이더 `input` 이벤트: 값 span 실시간 갱신 + 디바운스(300ms) `recalculate()`
-- [ ] select/checkbox `change` 이벤트: 즉시 `recalculate()`
-- [ ] `#wif-close` 클릭: 패널 닫기 (`.hidden` 추가)
-- [ ] `#whatif-overlay` 클릭: 패널 닫기
-- [ ] 테이블 행 `click` 이벤트: `openWhatIfPanel(result)` 호출
-  - 행에 `data-index` 속성 추가해 `results` 배열 참조
+- [x] 슬라이더 `input` 이벤트: 값 span 실시간 갱신 + 디바운스(300ms) `recalculate()`
+- [x] select/checkbox `change` 이벤트: 즉시 `recalculate()`
+- [x] `#wif-close` 클릭: 패널 닫기 (`.panel-open` 제거)
+- [x] `#whatif-overlay` 클릭: 패널 닫기
+- [x] 테이블 행 `click` 이벤트: `openWhatIfPanel(result)` 호출
+  - 행에 `data-index` 속성 추가해 `allResults` 배열 참조 (필터 후에도 올바른 인덱스 유지)
 
 #### JS 내 `CLUSTER_LABELS` 상수 정의
-- [ ] `const CLUSTER_LABELS = { 0: {name: ...}, 1: {...}, 2: {...}, 3: {...} }` 정의
-  (군집 변경 알림에서 사용)
+- [x] `const CLUSTER_LABELS = { 0: {name: ...}, 1: {...}, 2: {...}, 3: {...} }` 정의
+  (Priority 2에서 이미 정의됨 — 군집 변경 알림에서 재사용)
 
 ---
 
-### 3-3. `style.css` — 사이드 패널 스타일 추가
+### 3-3. `style.css` — 사이드 패널 스타일 추가 ✅
 
 #### 오버레이
-- [ ] `.whatif-overlay`: `position fixed; inset 0; background rgba(0,0,0,0.3); z-index 100`
-- [ ] `.whatif-overlay.hidden`: `display none`
+- [x] `.whatif-overlay`: `position fixed; inset 0; background rgba(0,0,0,0.3); z-index 100`
 
 #### 패널 드로어
-- [ ] `.whatif-panel`:
+- [x] `.whatif-panel`:
   - `position fixed; top 0; right 0; height 100vh; width 380px`
   - `background #FFF; box-shadow -4px 0 20px rgba(0,0,0,0.12)`
   - `overflow-y auto; padding 24px; z-index 101`
   - `transform translateX(100%); transition transform 0.3s ease`
-- [ ] `.whatif-panel:not(.hidden)`: `transform translateX(0)`
-- [ ] `.whatif-panel.hidden`: `transform translateX(100%)`
+  - `pointer-events none` (패널 닫힌 상태에서 클릭 방지)
+- [x] `.whatif-panel.panel-open`: `transform translateX(0); pointer-events auto`
 
 #### 패널 헤더
-- [ ] `.whatif-header`: `display flex; justify-content space-between; align-items flex-start; margin-bottom 20px`
-- [ ] `.wif-customer-id`: `font-size 1.1rem; font-weight 700`
-- [ ] `.wif-cluster-name`: `font-size 0.85rem; color --text-sub; margin-top 2px`
-- [ ] `.wif-close`: 원형 닫기 버튼, `32px × 32px; border-radius 50%; border 1px solid --border`
+- [x] `.whatif-header`, `.wif-customer-id`, `.wif-cluster-name`, `.wif-close` 구현
 
 #### 확률 표시 블록
-- [ ] `.wif-prob-block`: `background #F8FAFC; border-radius 8px; padding 16px; margin-bottom 20px`
-- [ ] `.wif-prob-label`: `font-size 0.75rem; color --text-sub; text-transform uppercase; margin-bottom 4px`
-- [ ] `.wif-prob-display`: `font-size 2rem; font-weight 800; color --text-main`
+- [x] `.wif-prob-block`, `.wif-prob-label`, `.wif-prob-display` 구현
 
 #### 컨트롤 그룹
-- [ ] `.wif-controls`: `display flex; flex-direction column; gap 16px`
-- [ ] `.wif-control-group label`: `font-size 0.85rem; font-weight 600; display block; margin-bottom 6px`
-- [ ] `input[type=range]`: 커스텀 트랙/thumb 스타일 (파란색 `--primary`)
-- [ ] `select#wif-contract, select#wif-payment`: 기존 `.form-control` 스타일 적용
+- [x] `.wif-controls`, `.wif-control-group label` 구현
+- [x] `input[type=range]`: 커스텀 트랙/thumb 스타일 (파란색 `--primary`)
+- [x] `.wif-select`: 드롭다운 화살표 포함 커스텀 셀렉트 스타일
 
 #### 토글 스위치
-- [ ] `.toggle-switch`: `position relative; width 44px; height 24px`
-- [ ] `.toggle-slider`: 슬라이드 원 + 배경 (#CBD5E1 → `--primary` 체크 시)
-- [ ] `.wif-toggle-wrap`: `display flex; align-items center; gap 8px`
+- [x] `.toggle-switch`, `.toggle-slider`, `.wif-toggle-wrap` 구현
 
 #### 결과 블록
-- [ ] `.wif-result-block`: `margin-top 24px; padding-top 24px; border-top 1px solid --border`
-- [ ] `.wif-delta`:
-  - `font-size 1rem; font-weight 700; margin-top 4px`
-  - `.delta-down`: `color --safe`
-  - `.delta-up`: `color --danger`
-- [ ] `.wif-cluster-change`: `background #FFF7ED; border-radius 6px; padding 8px 12px; margin-top 8px; font-size 0.85rem; color #EA7C2A`
-- [ ] `.wif-cluster-change.hidden`: `display none`
-- [ ] `.wif-action-card`: `margin-top 12px; padding 12px; background #F8FAFC; border-radius 8px; border-left 3px solid --primary`
+- [x] `.wif-result-block`, `.wif-delta`, `.delta-down`, `.delta-up` 구현
+- [x] `.wif-cluster-change`: `background #FFF7ED; color #EA7C2A`
+- [x] `.wif-action-card`, `.wif-action-title`, `.wif-action-desc`, `.wif-action-trigger` 구현
+- [x] `.ctable tbody tr[data-index]`: `cursor pointer` (행 클릭 가능 표시)
 
 #### 반응형
-- [ ] 480px 미만: `.whatif-panel` → `width 100vw`
+- [x] 480px 미만: `.whatif-panel` → `width 100vw`
 
 ---
 
-### 3-4. 기능 통합 테스트 (로컬)
+### 3-4. 기능 통합 테스트 (로컬) ✅
 
-- [ ] `vercel dev` 실행 상태에서:
-  1. CSV 업로드 → 결과 테이블 표시
-  2. 테이블 행 클릭 → 사이드 패널 열림 확인
-  3. 슬라이더 조작 → 조정 후 확률 실시간 갱신 확인
-  4. 변화량 (+/-) 색상 표시 확인
-  5. 군집이 바뀌는 시나리오 테스트 (tenure 크게 올리기)
-  6. 군집 변경 알림 텍스트 표시 확인
-  7. 패널 닫기(✕ / 오버레이 클릭) 동작 확인
-  8. TotalCharges 자동 재계산 확인 (tenure 10, Monthly $50 → TotalCharges 500)
+- [x] HTML 엘리먼트 15개 전체 확인 (ALL PASS)
+- [x] JS 함수·로직 16항목 확인 (ALL PASS)
+- [x] CSS 규칙 21항목 확인 (ALL PASS)
+- [x] API 시나리오 테스트:
+  1. C001(high, 군집1) → tenure 60, monthly $35, 보안사용, 자동이체 조정 → 2.3%(low, 군집0) ✓
+  2. 군집 1→0 변경 확인 + 추천 `discount_contract → upsell` 변경 ✓
+  3. TotalCharges = tenure×MonthlyCharges 자동계산 (10×$50=500) ✓
 
 ---
 
 ### Priority 3 완료 조건
-- [ ] 테이블 행 클릭 시 사이드 패널 슬라이드인
-- [ ] 패널에 선택된 고객의 현재 feature 값 자동 채워짐
-- [ ] 슬라이더/토글/셀렉트 조작 시 이탈 확률 실시간 갱신 (300ms 디바운스)
-- [ ] 원본 대비 변화량(`+/-Xp%`) 색상 표시
-- [ ] 확률 변화에 따라 추천 액션도 함께 갱신
-- [ ] tenure/MonthlyCharges 변경 시 TotalCharges = MonthlyCharges × tenure 자동 계산
-- [ ] 군집이 바뀔 때 변경 알림 표시
-- [ ] 오버레이 클릭 / ✕ 버튼으로 패널 닫힘
+- [x] 테이블 행 클릭 시 사이드 패널 슬라이드인
+- [x] 패널에 선택된 고객의 현재 feature 값 자동 채워짐
+- [x] 슬라이더/토글/셀렉트 조작 시 이탈 확률 실시간 갱신 (300ms 디바운스)
+- [x] 원본 대비 변화량(`▲▼ Xp%`) 색상 표시
+- [x] 확률 변화에 따라 추천 액션도 함께 갱신
+- [x] tenure/MonthlyCharges 변경 시 TotalCharges = MonthlyCharges × tenure 자동 계산
+- [x] 군집이 바뀔 때 변경 알림 표시
+- [x] 오버레이 클릭 / ✕ 버튼으로 패널 닫힘
 
 ---
 
@@ -509,9 +494,9 @@ Priority 2 완료 ✅ (PR #8, 2026-06-16)
   → branch: improvement/priority2-kmeans-clustering → main 머지 완료
   → Railway/Vercel 자동 재배포 트리거됨
 
-Priority 3 완료 ⬜
-  → git add node-server/ && git commit && git push
-  → Vercel 자동 재배포
+Priority 3 완료 ✅ (PR #11, 2026-06-16)
+  → branch: improvement/priority3-whatif-simulator → main 머지 완료
+  → Vercel 자동 재배포 트리거됨
 ```
 
 ### 배포 후 E2E 체크
@@ -519,7 +504,8 @@ Priority 3 완료 ⬜
 - [x] Priority 2: PR #8 머지 완료, Railway/Vercel 재배포 트리거됨
 - [x] Priority 2 로컬 E2E: Node 프록시 경유 4건 배치 — 4개 군집 뱃지·추천 액션 정상
 - [ ] Priority 2 프로덕션: `https://telchurn-production.up.railway.app/health` 워밍업 후 Vercel 대시보드 군집 뱃지 확인
-- [ ] Priority 3 완료 후: What-if 패널 전체 기능 E2E 확인
+- [x] Priority 3 로컬 E2E: API 시나리오 3건 통과 (확률 감소 / 군집 변경 / TotalCharges 자동계산)
+- [ ] Priority 3 프로덕션: Vercel 재배포 후 What-if 패널 슬라이드인 확인
 
 ---
 
