@@ -239,8 +239,9 @@
 ### 2-4. 배포 업데이트
 
 - [x] 변경 사항 commit → GitHub push → PR #8 머지 → main 동기화
-- [ ] Railway 자동 재배포 확인 (push 후 자동 트리거됨)
-- [ ] 배포 후 E2E 검증: Vercel 대시보드에서 군집 뱃지 4종 정상 표시
+- [x] Railway 자동 재배포 트리거됨 (push 시 자동)
+- [x] 로컬 E2E 검증 완료 — Node 프록시 경유 4건 배치 테스트, 군집 뱃지 4종 정상 확인
+- [ ] 프로덕션 E2E: Vercel 대시보드에서 군집 뱃지 4종 표시 확인
 
 ---
 
@@ -252,6 +253,7 @@
 - [x] `summary.cluster_distribution` 4개 키 포함
 - [x] 대시보드 테이블 군집 뱃지 4종 색상(초록/빨강/파랑/주황) renderClusterBadge() 연결
 - [x] 8가지 위험도 × 군집 조합 각각 다른 추천 액션 표시
+- [x] 로컬 E2E (Node 프록시 → Flask → 모델): 4건 배치 결과 군집·이탈확률·추천액션 전부 정상
 
 ---
 
@@ -515,8 +517,8 @@ Priority 3 완료 ⬜
 ### 배포 후 E2E 체크
 - [x] Priority 1: `https://node-server-tawny.vercel.app` ConnectCare 라이트 테마 확인
 - [x] Priority 2: PR #8 머지 완료, Railway/Vercel 재배포 트리거됨
-- [ ] Priority 2 배포 후: `https://telchurn-production.up.railway.app/health` 워밍업 확인
-- [ ] Priority 2 배포 후: Vercel 대시보드에서 군집 뱃지 4종 표시 확인
+- [x] Priority 2 로컬 E2E: Node 프록시 경유 4건 배치 — 4개 군집 뱃지·추천 액션 정상
+- [ ] Priority 2 프로덕션: `https://telchurn-production.up.railway.app/health` 워밍업 후 Vercel 대시보드 군집 뱃지 확인
 - [ ] Priority 3 완료 후: What-if 패널 전체 기능 E2E 확인
 
 ---
@@ -555,3 +557,5 @@ Priority 3:
 | TotalCharges 재계산 | What-if에서 tenure 변경 시 반드시 자동 재계산 후 API 전달 |
 | 디바운스 처리 | 슬라이더 `input` 이벤트에 300ms 디바운스 적용 (API 과호출 방지) |
 | Railway 슬립 모드 | Priority 2 재배포 후 시연 전 `/health` 워밍업 필수 |
+| 로컬 포트 5000 좀비 | Git Bash `pkill`이 Windows 프로세스를 완전히 종료 못 할 수 있음. Flask 재시작 전 PowerShell에서 `Get-Process -Name python \| Stop-Process -Force` 실행 필수. 또는 로컬 `.env`를 5001 등 다른 포트로 변경하여 우회 |
+| 로컬 `.env` 포트 | 현재 `node-server/.env` → `PYTHON_API_URL=http://localhost:5001` (포트 충돌 우회용). Railway 배포는 무관 |
