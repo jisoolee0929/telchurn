@@ -1315,3 +1315,159 @@ input[type=range]::-moz-range-thumb {
 }
 
 .kpi-value.is-empty { color: var(--border) !important; font-weight: 500; }
+
+/* ── Intervention Plan ───────────────────────────────────────────────────── */
+.plan-card {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 24px;
+  align-items: center;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+
+.plan-controls { min-width: 0; }
+
+.plan-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.plan-hint {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-light);
+  letter-spacing: -0.1px;
+}
+
+.plan-inputs {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.plan-field { flex: 1; min-width: 0; }
+.plan-field-sm { flex: 0 0 auto; }
+
+.plan-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-sub);
+}
+
+.plan-field label strong {
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-field input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.plan-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  min-width: 0;
+}
+
+.plan-stat {
+  padding: 10px 14px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  min-width: 0;
+}
+
+.plan-stat-accent {
+  background: var(--primary-dim);
+  border-color: rgba(26, 111, 232, 0.18);
+}
+
+.plan-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+}
+
+.plan-stat-value {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-stat-accent .plan-stat-value { color: var(--primary); }
+
+.plan-stat-sub {
+  margin-top: 2px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+.budget-text {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 기준선 위에 있는 = 실제로 연락할 고객. 나머지는 톤을 낮춘다. */
+.ctable tbody tr.row-target .cid { font-weight: 700; }
+.ctable tbody tr:not(.row-target) { opacity: 0.55; }
+.ctable tbody tr:not(.row-target):hover { opacity: 1; }
+
+@media (max-width: 1080px) {
+  .plan-card { grid-template-columns: 1fr; gap: 16px; }
+}
+
+@media (max-width: 700px) {
+  .plan-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* 열이 10개로 늘면서 추천 액션이 잘렸다. 전체 문구는 tooltip에 있으므로
+   말줄임으로 접어 가로 스크롤 없이 마지막 열까지 보이게 한다. */
+.ev-name {
+  display: inline-block;
+  max-width: 156px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* 1440px에서도 가로 스크롤이 생겨 폭을 더 줄인다. 군집명과 추천 액션은
+   전체 문구가 tooltip에 있으므로 말줄임 대상으로 적합하다. */
+.badge[class*="badge-cluster-"] {
+  display: inline-block;
+  max-width: 116px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.ev-name { max-width: 132px; }
+.td-factors { min-width: 184px; }
+.ctable td, .ctable th { padding-left: 10px; padding-right: 10px; }
+
+/* 위험도 뱃지 열을 없애고 확률 수치 자체에 색을 실었다. */
+.prob-text.is-high { color: var(--danger); }
+.prob-text.is-low  { color: var(--safe); }
+
+/* 14px 초과분. 위험 요인 태그 열을 조금 더 좁힌다. */
+.td-factors { min-width: 162px; }

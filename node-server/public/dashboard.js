@@ -4,6 +4,9 @@
 let allResults    = [];
 let currentFilter = 'all';
 let sortMode      = 'priority';
+let modelMetrics  = null;   // 임계값별 정밀도/재현율 (서버 측정값)
+let planThreshold = 0.5;
+let planSuccess   = 0.3;
 let chartInstance = null;
 let parsedCustomers = [];
 let originalProbability  = 0;
@@ -64,6 +67,11 @@ const SAMPLE_ROWS = [
 
 const YN = v => (v ? 'Yes' : 'No');
 
+// 계약 기간은 가입 기간과 함께 움직인다 — 오래 남은 고객일수록 약정을 걸어둔
+// 상태다. 샘플에서도 이 관계를 유지해야 군집과 위험도가 현실적으로 나온다.
+const contractFor = tenure =>
+  tenure < 18 ? 'Month-to-month' : tenure < 45 ? 'One year' : 'Two year';
+
 function buildSampleCustomers() {
   return SAMPLE_ROWS.map(([tenure, monthly, pay, sec, tech, tv, mv, senior], i) => {
     // 누적 요금은 가입 기간 동안 요금제가 조금씩 오른 것처럼 근사한다.
@@ -74,6 +82,7 @@ function buildSampleCustomers() {
       MonthlyCharges:    monthly,
       TotalCharges:      total,
       avg_monthly_spend: tenure > 0 ? total / tenure : 0,
+      Contract:          contractFor(tenure),
       PaymentMethod:     PAYMENTS[pay],
       OnlineSecurity:    YN(sec),
       TechSupport:       YN(tech),
@@ -94,6 +103,12 @@ const fmtPct = n => (n * 100).toFixed(1) + '%';
 // 운영진의 우선순위는 확률이 아니라 이 값으로 정해져야 한다.
 const expectedLoss = r => (r.churn_probability || 0) * (r.MonthlyCharges || 0);
 
+// 이 고객에게 매달 얼마까지 쓰면 본전인가.
+//   기대 구제 매출 = 이탈확률 × 캠페인 성공률 × 월요금
+// 여기까지가 손익분기이고, 넘기면 붙잡아도 손해다. 모델이 "위험하다"에서
+// 멈추지 않고 "그래서 얼마"까지 답하게 하는 값이다.
+const breakEvenDiscount = r => expectedLoss(r) * planSuccess;
+
 // ── Icons ─────────────────────────────────────────────────────────────────
 const ICONS = {
   gift: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`,
@@ -110,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initBatchButton();
   initWhatIfPanel();
   initSampleData();
+  initPlanPanel();
   warmUpApi();
 });
 
@@ -174,6 +190,7 @@ function handleFile(file) {
           MonthlyCharges:    Number(row.MonthlyCharges) || 0,
           TotalCharges:      total,
           avg_monthly_spend: tenure > 0 ? total / tenure : 0,
+          Contract:          row.Contract        || 'Month-to-month',
           PaymentMethod:     row.PaymentMethod   || '',
           OnlineSecurity:    row.OnlineSecurity  || 'No',
           TechSupport:       row.TechSupport     || 'No',
@@ -199,9 +216,9 @@ function initTemplateDownload() {
     e.preventDefault();
     e.stopPropagation();
     const rows = [
-      'customer_id,tenure,MonthlyCharges,TotalCharges,PaymentMethod,OnlineSecurity,TechSupport,StreamingTV,StreamingMovies,SeniorCitizen',
-      'C001,12,70.5,846.0,Electronic check,No,No,Yes,No,0',
-      'C002,48,45.0,2160.0,Bank transfer (automatic),Yes,Yes,No,No,0',
+      'customer_id,tenure,MonthlyCharges,TotalCharges,Contract,PaymentMethod,OnlineSecurity,TechSupport,StreamingTV,StreamingMovies,SeniorCitizen',
+      'C001,12,70.5,846.0,Month-to-month,Electronic check,No,No,Yes,No,0',
+      'C002,48,45.0,2160.0,Two year,Bank transfer (automatic),Yes,Yes,No,No,0',
     ];
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
     const url  = URL.createObjectURL(blob);
@@ -234,6 +251,8 @@ async function runBatchPredict(customers) {
       r.TotalCharges   = customers[i].TotalCharges;
       r.OnlineSecurity = customers[i].OnlineSecurity;
       r.PaymentMethod  = customers[i].PaymentMethod;
+      r.Contract       = customers[i].Contract;
+      r._source        = customers[i];
     });
     renderResults(results, summary);
   } catch (err) {
@@ -257,6 +276,7 @@ function initManualForm() {
       MonthlyCharges:    Number(fd.get('MonthlyCharges')) || 0,
       TotalCharges:      total,
       avg_monthly_spend: tenure > 0 ? total / tenure : 0,
+      Contract:          fd.get('Contract'),
       PaymentMethod:     fd.get('PaymentMethod'),
       OnlineSecurity:    fd.get('OnlineSecurity'),
       TechSupport:       fd.get('TechSupport'),
@@ -279,6 +299,8 @@ function initManualForm() {
       result.TotalCharges   = customer.TotalCharges;
       result.OnlineSecurity = customer.OnlineSecurity;
       result.PaymentMethod  = customer.PaymentMethod;
+      result.Contract       = customer.Contract;
+      result._source        = customer;
       renderResults([result], {
         total:     1,
         high_risk: result.risk_level === 'high' ? 1 : 0,
@@ -299,6 +321,7 @@ function renderResults(results, summary) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
 
   updateKPICards(summary, results);
+  renderPlan();
   renderChart(results);
   renderClusterPanel(results);
   renderEventCards(results);
@@ -550,12 +573,12 @@ function renderTable() {
     const origIdx = allResults.indexOf(r);
 
     return `
-      <tr data-index="${origIdx}" style="animation-delay:${Math.min(rowIdx, 20) * 25}ms">
+      <tr data-index="${origIdx}" class="${r.churn_probability >= planThreshold ? 'row-target' : ''}" style="animation-delay:${Math.min(rowIdx, 20) * 25}ms">
         <td><span class="rank">${rowIdx + 1}</span></td>
         <td><span class="cid">${escapeHtml(r.customer_id || '—')}</span></td>
         <td>
           <div class="prob-cell">
-            <span class="prob-text">${pct}%</span>
+            <span class="prob-text ${isHigh ? 'is-high' : 'is-low'}">${pct}%</span>
             <div class="prob-bar">
               <div class="prob-bar-fill ${isHigh ? 'high' : 'low'}" style="width:${pct}%"></div>
             </div>
@@ -567,7 +590,7 @@ function renderTable() {
             <div class="loss-bar"><div class="loss-bar-fill" style="width:${(loss / maxLoss * 100).toFixed(1)}%"></div></div>
           </div>
         </td>
-        <td><span class="badge ${isHigh ? 'badge-high' : 'badge-low'}">${isHigh ? '고위험' : '저위험'}</span></td>
+        <td><span class="budget-text">${fmtMoney(breakEvenDiscount(r))}</span></td>
         <td>${renderClusterBadge(r)}</td>
         <td class="td-factors">${factors}</td>
         <td><span class="ev-name ${isHigh ? 'ev-high' : 'ev-low'}"${evDesc}>${escapeHtml(evTitle)}</span></td>
@@ -577,6 +600,87 @@ function renderTable() {
 
   const counter = document.getElementById('table-count');
   if (counter) counter.textContent = `${rows.length}명`;
+}
+
+// ── Intervention Plan ─────────────────────────────────────────────────────
+// 대시보드가 "고위험"을 확정처럼 보여주면 운영진은 명단 전체에 연락하고,
+// 그 중 절반은 헛수고가 된다(임계값 0.5의 실제 정밀도는 0.498). 기준선을
+// 직접 옮기면서 대상 수·정확도·예산이 함께 어떻게 변하는지 보여준다.
+function initPlanPanel() {
+  const slider = document.getElementById('plan-threshold');
+  const success = document.getElementById('plan-success');
+  if (!slider || !success) return;
+
+  slider.addEventListener('input', () => {
+    planThreshold = Number(slider.value) / 100;
+    document.getElementById('plan-threshold-val').textContent = slider.value + '%';
+    renderPlan();
+    renderTable();
+  });
+
+  success.addEventListener('change', () => {
+    planSuccess = Number(success.value);
+    renderPlan();
+    renderTable();
+  });
+
+  loadModelMetrics();
+}
+
+async function loadModelMetrics() {
+  try {
+    const res = await fetch('/api/model-metrics');
+    if (!res.ok) return;              // 지표가 없어도 대시보드는 동작해야 한다
+    modelMetrics = await res.json();
+    renderPlan();
+  } catch { /* 무시 */ }
+}
+
+// 슬라이더 값에 가장 가까운 측정 지점을 쓴다. 보간하면 측정하지 않은 수치를
+// 지어내는 셈이라, 실제로 측정한 임계값만 사용한다.
+function metricsAt(threshold) {
+  if (!modelMetrics?.thresholds?.length) return null;
+  return modelMetrics.thresholds.reduce((best, row) =>
+    Math.abs(row.threshold - threshold) < Math.abs(best.threshold - threshold) ? row : best
+  );
+}
+
+function renderPlan() {
+  const card = document.getElementById('plan-card');
+  if (!card) return;
+  card.classList.toggle('hidden', allResults.length === 0);
+  if (allResults.length === 0) return;
+
+  const targets = allResults.filter(r => r.churn_probability >= planThreshold);
+  const n = allResults.length;
+  const m = metricsAt(planThreshold);
+
+  setText('plan-targets', `${targets.length}명`);
+  setText('plan-targets-sub', `전체 ${n}명의 ${fmtPct(targets.length / n)}`);
+
+  if (m) {
+    const hit  = Math.round(targets.length * m.precision);
+    const miss = targets.length - hit;
+    setText('plan-precision', `${hit} / ${miss}`);
+    setText('plan-precision-sub', `정밀도 ${fmtPct(m.precision)} (t=${m.threshold})`);
+
+    // 연락하지 않는 고객 중 실제 이탈자 추정:
+    // 전체 이탈 예상 인원에서 적중분을 뺀 나머지.
+    const totalChurners = m.recall > 0 ? hit / m.recall : 0;
+    setText('plan-missed', `${Math.max(0, Math.round(totalChurners - hit))}명`);
+    setText('plan-missed-sub', `재현율 ${fmtPct(m.recall)}`);
+  } else {
+    setText('plan-precision', '—');
+    setText('plan-precision-sub', '모델 지표 로드 실패');
+    setText('plan-missed', '—');
+    setText('plan-missed-sub', '—');
+  }
+
+  const budget = targets.reduce((sum, r) => sum + breakEvenDiscount(r), 0);
+  setText('plan-budget', fmtMoney(budget));
+  setText('plan-budget-sub', targets.length
+    ? `1인당 평균 ${fmtMoney(budget / targets.length)} · 성공률 ${fmtPct(planSuccess)} 가정`
+    : '대상 없음');
 }
 
 // ── Sample Data ───────────────────────────────────────────────────────────
@@ -693,10 +797,21 @@ async function recalculate() {
   const contract = document.getElementById('wif-contract').value;
   const security = document.getElementById('wif-security').checked ? 'Yes' : 'No';
   const payment  = document.getElementById('wif-payment').value;
-  const total    = monthly * tenure;
+
+  // 조작하지 않은 피처는 원본 그대로 보내야 델타가 조작의 효과만 나타낸다.
+  // 결과 객체만 펼치면 TechSupport·Streaming·SeniorCitizen이 누락된다.
+  const source = currentPanelCustomer._source || currentPanelCustomer;
+
+  // 누적 요금은 이 고객의 실제 월평균 지출에 새 가입 기간을 곱해 환산한다.
+  // monthly × tenure로 새로 만들면 원래 tenure에서도 원본과 값이 어긋난다.
+  const baseRate = source.tenure > 0
+    ? (source.TotalCharges || 0) / source.tenure
+    : monthly;
+  const total = baseRate * tenure;
 
   const payload = {
-    ...currentPanelCustomer,
+    ...source,
+    customer_id:       currentPanelCustomer.customer_id,
     tenure,
     MonthlyCharges:    monthly,
     TotalCharges:      total,

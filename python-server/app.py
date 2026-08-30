@@ -1,3 +1,5 @@
+import json
+import os
 import pickle
 import pandas as pd
 import numpy as np
@@ -16,10 +18,18 @@ with open('kmeans.pkl', 'rb') as f:
 with open('cluster_scaler.pkl', 'rb') as f:
     cluster_scaler = pickle.load(f)
 
+# 임계값별 정밀도/재현율 표 (train.py가 테스트셋에서 측정해 저장).
+# 없더라도 예측은 계속 되어야 하므로 서버 기동을 막지 않는다.
+if os.path.exists('threshold_metrics.json'):
+    with open('threshold_metrics.json', encoding='utf-8') as f:
+        THRESHOLD_METRICS = json.load(f)
+else:
+    THRESHOLD_METRICS = None
+
 FEATURE_ORDER = [
     'tenure', 'MonthlyCharges', 'TotalCharges', 'avg_monthly_spend',
     'PaymentMethod', 'OnlineSecurity', 'TechSupport',
-    'StreamingTV', 'StreamingMovies', 'SeniorCitizen'
+    'StreamingTV', 'StreamingMovies', 'SeniorCitizen', 'Contract'
 ]
 
 CLUSTER_FEATURES = ['tenure', 'MonthlyCharges', 'TotalCharges', 'avg_monthly_spend']
@@ -125,6 +135,9 @@ def classify_risk(prob: float) -> str:
 
 def extract_risk_factors(row: dict) -> list:
     factors = []
+    # 월간계약은 이 데이터셋 단일 신호 중 가장 강하다 (42.7% vs 2년 2.8%).
+    if row.get('Contract') == 'Month-to-month':
+        factors.append("월간 계약")
     if row['tenure'] < 12:
         factors.append("짧은 가입 기간")
     if row['MonthlyCharges'] > 70:
@@ -155,6 +168,10 @@ def predict_one(customer: dict) -> dict:
         'StreamingTV':        customer.get('StreamingTV', ''),
         'StreamingMovies':    customer.get('StreamingMovies', ''),
         'SeniorCitizen':      int(customer.get('SeniorCitizen', 0)),
+        # Contract 미기입 CSV는 이탈률이 가장 높은 월간계약으로 가정한다.
+        # 통신사 계약의 기본값이기도 하고, 위험을 낮게 잡는 쪽으로 틀리는 것보다
+        # 높게 잡는 쪽으로 틀리는 편이 리텐션 운영에서 안전하다.
+        'Contract':           customer.get('Contract') or 'Month-to-month',
     }
 
     df_row = pd.DataFrame([row])[FEATURE_ORDER]
@@ -183,6 +200,14 @@ def predict_one(customer: dict) -> dict:
 @app.get('/health')
 def health():
     return jsonify({"status": "ok"})
+
+
+@app.get('/model-metrics')
+def model_metrics():
+    """임계값별 정밀도/재현율. 운영진이 개입 기준선을 고를 때 쓴다."""
+    if THRESHOLD_METRICS is None:
+        return jsonify({"error": "metrics_unavailable"}), 503
+    return jsonify(THRESHOLD_METRICS)
 
 
 @app.post('/predict-single')
