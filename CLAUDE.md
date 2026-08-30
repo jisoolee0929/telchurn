@@ -11,7 +11,7 @@ CSV 업로드 또는 수동 입력으로 고객 데이터를 넣으면,
 - **데이터**: Kaggle Telco Customer Churn
 - **ML**: Python(sklearn) → model.pkl → Flask API
 - **프론트/중계**: Node.js(Vercel) + Vanilla JS
-- **배포**: Flask → Railway / Node.js → Vercel
+- **배포**: Flask → Render / Node.js → Vercel
 
 ---
 
@@ -20,8 +20,9 @@ CSV 업로드 또는 수동 입력으로 고객 데이터를 넣으면,
 ```
 churn-dashboard-mvp/
 ├── CLAUDE.md
+├── render.yaml                 # Render Blueprint (python-server 배포 정의)
 │
-├── python-server/              # Railway 배포
+├── python-server/              # Render 배포
 │   ├── train.py                # 모델 학습 → pkl 저장
 │   ├── app.py                  # Flask API 서버
 │   ├── model.pkl               # 학습된 Logistic Regression
@@ -36,7 +37,8 @@ churn-dashboard-mvp/
     ├── .gitignore
     ├── api/
     │   ├── predict-batch.js    # CSV/배열 일괄 예측
-    │   └── predict-single.js   # 단일 고객 예측
+    │   ├── predict-single.js   # 단일 고객 예측
+    │   └── health.js           # 예측 서버 워밍업(슬립 해제)
     └── public/
         ├── index.html          # 대시보드 단일 페이지
         ├── dashboard.js        # 차트·테이블·이벤트 카드 렌더링
@@ -344,18 +346,22 @@ C002,48,45.0,2160.0,Bank transfer (automatic),Yes,Yes,No,No,0
 
 ## Step 5 — 배포
 
-### 5-1. Python 서버 → Railway
+### 5-1. Python 서버 → Render
 1. `python-server/` 를 GitHub에 push
-2. Railway → New Project → Deploy from GitHub
-3. Root Directory: `python-server`
+2. Render → New → Blueprint → 레포 선택
+3. 레포 루트의 `render.yaml` 자동 인식 → Apply
+   (rootDir `python-server`, Python 3.13.4 고정, healthCheckPath `/health`)
 4. 환경변수 없음 (model.pkl은 레포에 포함)
-5. 배포 후 Railway URL 복사
+5. 배포 후 Render URL 복사
+
+> 최초 배포는 Railway였으나 무료 크레딧 소진으로 앱이 삭제됨
+> (`Application not found` 404). 2026-08-30 Render로 이전.
 
 ### 5-2. Node.js → Vercel
 1. `node-server/` 를 GitHub에 push
 2. Vercel → New Project → Deploy from GitHub
 3. Root Directory: `node-server`
-4. Environment Variables: `PYTHON_API_URL` = Railway URL
+4. Environment Variables: `PYTHON_API_URL` = Render URL
 5. 자동 배포
 
 ### node-server/vercel.json
@@ -405,8 +411,16 @@ vercel dev               # http://localhost:3000
 - **TotalCharges 타입**: 원본 CSV에서 object로 읽힘.
   `pd.to_numeric(df['TotalCharges'], errors='coerce').fillna(0)` 처리 필수.
 
-- **Railway 슬립 모드**: 무료 플랜은 15분 미사용 시 슬립.
-  시연 전 `/health` 엔드포인트로 워밍업 요청 1회 필수.
+- **Render 슬립 모드**: 무료 플랜은 15분 미사용 시 슬립하며 콜드 스타트 ~50초.
+  대시보드 로드 시 `/api/health`로 자동 워밍업하지만(`warmUpApi()`),
+  시연 전 수동으로 1회 더 깨워두면 안전하다.
+
+- **Vercel 함수 타임아웃**: 기본 10초라 콜드 스타트에 그대로 걸린다.
+  `api/*.js`는 `export const config = { maxDuration: 60 }` 필수.
+
+- **중계 상태 전파**: `api/predict-*.js`는 Flask 응답 상태를 그대로 반영해야 한다.
+  무조건 `res.status(200)`으로 감싸면 업스트림이 죽어도 대시보드가
+  정상 응답으로 오인해 에러가 표시되지 않는다.
 
 - **CORS**: Flask에 flask-cors 미설정 시 브라우저 요청 전체 차단.
 
@@ -495,12 +509,13 @@ vercel dev               # http://localhost:3000
   - dashboard.js 함수 15개 정의 및 로직 검증 정상
   - HTML 태그 균형 51/51 정상 (초기 UTF-8 인코딩 오탐 수정)
 
-#### Step 5 — Railway / Vercel 배포
+#### Step 5 — Render / Vercel 배포
 - `python-server/.gitignore` 생성 완료 (CSV, `__pycache__/`, `*.pyc`, `.env` 제외)
-- Railway 배포 완료 (GitHub 연동, Root: `python-server`)
-  - **Railway URL**: `https://telchurn-production.up.railway.app`
+- Render 배포 완료 (Blueprint `render.yaml`, rootDir: `python-server`)
+  - **Render URL**: `https://telchurn-api.onrender.com`
   - `/health` 응답 정상: `{"status":"ok"}`
-- Vercel 배포 완료 (CLI `vercel --prod`, `PYTHON_API_URL` = Railway URL)
+  - ~~Railway `https://telchurn-production.up.railway.app`~~ — 크레딧 소진으로 삭제됨 (PR #12에서 이전)
+- Vercel 배포 완료 (CLI `vercel --prod`, `PYTHON_API_URL` = Render URL)
   - **Vercel URL**: `https://node-server-tawny.vercel.app`
 - E2E 검증 통과:
   - `predict-single`: C001 이탈 확률 0.8045 (high), 위험요인 3개, discount 이벤트
