@@ -68,6 +68,7 @@ churn-dashboard-mvp/
 | StreamingTV | 범주 | OneHotEncoder(drop='first') | 중립 |
 | StreamingMovies | 범주 | OneHotEncoder(drop='first') | 중립 |
 | SeniorCitizen | 이진 | passthrough | 고령 소폭 위험 |
+| Contract | 범주 | OneHotEncoder(drop='first') | 월간계약 위험 ↑ (PR #14 추가) |
 
 ### 목표 성능 (test set 기준)
 - Recall > 0.70 / F1 > 0.60 / AUPRC > 0.40
@@ -152,6 +153,7 @@ print("학습 완료. model.pkl / preprocessor.pkl 저장됨")
 | POST | /predict-batch | 고객 배열 일괄 예측 |
 | POST | /predict-single | 단일 고객 예측 |
 | GET | /health | 헬스체크 |
+| GET | /model-metrics | 임계값별 정밀도/재현율 (개입 기준선 선택용) |
 
 ### /predict-batch 입력 스펙
 ```json
@@ -321,9 +323,12 @@ PYTHON_API_URL=https://your-app.railway.app
 
 ### CSV 포맷 (업로드 템플릿)
 ```
-customer_id,tenure,MonthlyCharges,TotalCharges,PaymentMethod,OnlineSecurity,TechSupport,StreamingTV,StreamingMovies,SeniorCitizen
-C001,12,70.5,846.0,Electronic check,No,No,Yes,No,0
-C002,48,45.0,2160.0,Bank transfer (automatic),Yes,Yes,No,No,0
+customer_id,tenure,MonthlyCharges,TotalCharges,Contract,PaymentMethod,OnlineSecurity,TechSupport,StreamingTV,StreamingMovies,SeniorCitizen
+C001,12,70.5,846.0,Month-to-month,Electronic check,No,No,Yes,No,0
+C002,48,45.0,2160.0,Two year,Bank transfer (automatic),Yes,Yes,No,No,0
+
+> Contract 열이 없으면 Flask가 `Month-to-month`로 가정한다.
+> 위험을 낮게 잡는 쪽으로 틀리는 것보다 높게 잡는 쪽이 리텐션에서 안전하다.
 ```
 
 ### 대시보드 렌더링 흐름 (dashboard.js)
@@ -402,8 +407,14 @@ vercel dev               # http://localhost:3000
 
 - **열 순서 고정**: Flask에서 DataFrame 생성 시 feature 순서를
   `['tenure','MonthlyCharges','TotalCharges','avg_monthly_spend',
-    'PaymentMethod','OnlineSecurity','TechSupport','StreamingTV','StreamingMovies','SeniorCitizen']`
+    'PaymentMethod','OnlineSecurity','TechSupport','StreamingTV','StreamingMovies',
+    'SeniorCitizen','Contract']`
   로 항상 고정. 순서 다르면 추론 결과 완전히 틀어짐.
+
+- **What-if 페이로드는 전체 피처를 실어야 함**: 조작하지 않는 피처를
+  빠뜨리면 OneHotEncoder가 `handle_unknown='ignore'`로 전부 0 처리해,
+  아무것도 조작하지 않아도 확률이 달라진다. 표시되는 델타에 조작과
+  무관한 오차가 섞이므로 시뮬레이터가 거짓말을 하게 된다.
 
 - **transform만 호출**: Flask app.py에서 `preprocessor.fit_transform()` 절대 금지.
   반드시 `preprocessor.transform(df)` 만 사용.

@@ -68,6 +68,61 @@
       <!-- Error -->
       <div id="error-msg" class="error-msg hidden"></div>
 
+      <!-- Intervention Plan -->
+      <section id="plan-card" class="card plan-card hidden">
+        <div class="plan-controls">
+          <div class="plan-title">
+            개입 계획
+            <span class="plan-hint">연락 기준선을 옮기면 대상·정확도·예산이 함께 움직입니다</span>
+          </div>
+          <div class="plan-inputs">
+            <div class="plan-field">
+              <label for="plan-threshold">연락 기준선 <strong id="plan-threshold-val">50%</strong></label>
+              <input type="range" id="plan-threshold" min="20" max="80" step="5" value="50">
+            </div>
+            <div class="plan-field plan-field-sm">
+              <label for="plan-success">캠페인 성공률</label>
+              <select id="plan-success" class="sort-select">
+                <option value="0.2">20%</option>
+                <option value="0.3" selected>30%</option>
+                <option value="0.5">50%</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="plan-stats">
+          <div class="plan-stat">
+            <div class="plan-stat-label">연락 대상</div>
+            <div class="plan-stat-value" id="plan-targets">—</div>
+            <div class="plan-stat-sub" id="plan-targets-sub">—</div>
+          </div>
+          <div class="plan-stat">
+            <div class="plan-stat-label">
+              적중 / 헛수고
+              <span class="kpi-info" title="테스트셋 1,409건에서 측정한 이 임계값의 실제 정밀도입니다. 연락해도 실제로는 이탈하지 않을 고객 수를 뜻합니다.">?</span>
+            </div>
+            <div class="plan-stat-value" id="plan-precision">—</div>
+            <div class="plan-stat-sub" id="plan-precision-sub">—</div>
+          </div>
+          <div class="plan-stat">
+            <div class="plan-stat-label">
+              놓치는 이탈 고객
+              <span class="kpi-info" title="기준선 아래에 있어 연락하지 않는 고객 중 실제로 이탈할 인원의 추정치입니다.">?</span>
+            </div>
+            <div class="plan-stat-value" id="plan-missed">—</div>
+            <div class="plan-stat-sub" id="plan-missed-sub">—</div>
+          </div>
+          <div class="plan-stat plan-stat-accent">
+            <div class="plan-stat-label">
+              월 개입 예산 상한
+              <span class="kpi-info" title="Σ(이탈확률 × 성공률 × 월요금). 이 금액까지 쓰면 본전이고, 넘기면 손해입니다.">?</span>
+            </div>
+            <div class="plan-stat-value" id="plan-budget">—</div>
+            <div class="plan-stat-sub" id="plan-budget-sub">—</div>
+          </div>
+        </div>
+      </section>
+
       <!-- Main Grid: Chart (left) + Table (right) -->
       <div class="main-grid">
 
@@ -138,7 +193,7 @@
                     <th>고객 ID</th>
                     <th>이탈 확률</th>
                     <th title="이탈 확률 × 월 요금 — 이 고객을 놓쳤을 때 매달 잃는 금액의 기댓값">위험 매출 /월</th>
-                    <th>위험도</th>
+                    <th title="이탈 확률 × 캠페인 성공률 × 월 요금 — 이 고객에게 매달 이만큼까지 할인해도 본전입니다">할인 상한 /월</th>
                     <th>군집</th>
                     <th>주요 위험 요인</th>
                     <th>추천 액션</th>
@@ -232,6 +287,14 @@
                 <div class="form-group">
                   <label>총 누적 요금 <span class="unit">$</span></label>
                   <input type="number" name="TotalCharges" step="0.01" value="846" placeholder="846.00">
+                </div>
+                <div class="form-group">
+                  <label>계약 유형</label>
+                  <select name="Contract">
+                    <option value="Month-to-month">월간 계약</option>
+                    <option value="One year">1년 약정</option>
+                    <option value="Two year">2년 약정</option>
+                  </select>
                 </div>
                 <div class="form-group">
                   <label>결제 방식</label>

@@ -16,6 +16,10 @@
       "dest": "/api/health.js"
     },
     {
+      "src": "/api/model-metrics",
+      "dest": "/api/model-metrics.js"
+    },
+    {
       "src": "/api/predict-batch",
       "dest": "/api/predict-batch.js"
     },
