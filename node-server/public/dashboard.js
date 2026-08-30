@@ -33,7 +33,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initFilters();
   initBatchButton();
   initWhatIfPanel();
+  warmUpApi();
 });
+
+// ── Warm-up ───────────────────────────────────────────────────────────────
+// 예측 서버(무료 플랜)는 미사용 시 슬립한다. 페이지 로드 시 한 번 깨워두면
+// 사용자가 실제로 예측을 누를 때쯤엔 콜드 스타트가 끝나 있다.
+function warmUpApi() {
+  fetch('/api/health').catch(() => { /* 워밍업 실패는 무시 */ });
+}
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 function initTabs() {
