@@ -34,20 +34,28 @@
       <!-- KPI Cards (always visible) -->
       <div class="kpi-grid">
         <div class="kpi-card">
-          <div class="kpi-label">총 고객 수</div>
-          <div class="kpi-value" id="kpi-total">—</div>
+          <div class="kpi-label">분석 고객 수</div>
+          <div class="kpi-value is-empty" id="kpi-total">—</div>
+          <div class="kpi-sub" id="kpi-total-sub">예측 대기 중</div>
         </div>
         <div class="kpi-card kpi-danger">
           <div class="kpi-label">고위험 고객</div>
-          <div class="kpi-value" id="kpi-high">—</div>
+          <div class="kpi-value is-empty" id="kpi-high">—</div>
+          <div class="kpi-track"><div class="kpi-track-fill" id="kpi-high-bar" style="width:0%"></div></div>
+          <div class="kpi-sub" id="kpi-high-sub">—</div>
         </div>
-        <div class="kpi-card kpi-safe">
-          <div class="kpi-label">저위험 고객</div>
-          <div class="kpi-value" id="kpi-low">—</div>
+        <div class="kpi-card kpi-accent">
+          <div class="kpi-label">
+            위험 매출 <span class="kpi-unit">/월</span>
+            <span class="kpi-info" title="Σ(이탈 확률 × 월 요금). 이번 달 잃을 것으로 예상되는 매출의 기댓값입니다.">?</span>
+          </div>
+          <div class="kpi-value is-empty" id="kpi-revenue">—</div>
+          <div class="kpi-sub" id="kpi-revenue-sub">—</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">평균 이탈 확률</div>
-          <div class="kpi-value" id="kpi-avg">—</div>
+          <div class="kpi-value is-empty" id="kpi-avg">—</div>
+          <div class="kpi-sub" id="kpi-avg-sub">—</div>
         </div>
       </div>
 
@@ -66,7 +74,7 @@
         <!-- Left Column: Chart + Event Cards -->
         <div class="left-col">
           <div class="card chart-card">
-            <div class="card-title">위험도 분포</div>
+            <div class="card-title">이탈 확률 분포</div>
             <div id="chart-empty" class="chart-empty">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
                 <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
@@ -78,18 +86,35 @@
             </div>
           </div>
 
-          <div id="event-cards" class="events-col"></div>
+          <div class="card cluster-card hidden" id="cluster-card">
+            <div class="card-title">
+              고객 군집 구성
+              <span class="card-title-hint">위험 매출 순</span>
+            </div>
+            <div id="cluster-panel" class="cluster-panel"></div>
+          </div>
+
         </div>
 
         <!-- Right Column: Table -->
         <div class="right-col">
           <div class="card table-card">
             <div class="table-toolbar">
-              <div class="card-title">고객 목록</div>
-              <div class="filter-group">
-                <button class="filter-btn active" data-filter="all">전체</button>
-                <button class="filter-btn" data-filter="high">고위험</button>
-                <button class="filter-btn" data-filter="low">저위험</button>
+              <div class="toolbar-left">
+                <div class="card-title">대응 우선순위</div>
+                <span class="table-count" id="table-count"></span>
+              </div>
+              <div class="toolbar-right">
+                <div class="filter-group">
+                  <button class="filter-btn active" data-filter="all">전체</button>
+                  <button class="filter-btn" data-filter="high">고위험</button>
+                  <button class="filter-btn" data-filter="low">저위험</button>
+                </div>
+                <select id="sort-mode" class="sort-select" title="정렬 기준">
+                  <option value="priority">우선순위 (확률×요금)</option>
+                  <option value="probability">이탈 확률순</option>
+                  <option value="value">월 요금순</option>
+                </select>
               </div>
             </div>
             <div class="table-scroll">
@@ -98,16 +123,26 @@
                   <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
                 </svg>
                 <p>CSV를 업로드하거나 수동으로 고객 정보를 입력하면<br>예측 결과가 여기에 표시됩니다.</p>
+                <button class="btn-sample" data-sample>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  샘플 데이터 40명으로 둘러보기
+                </button>
+                <span class="empty-hint">실제 모델이 즉시 추론합니다</span>
               </div>
               <table class="ctable hidden" id="ctable">
                 <thead>
                   <tr>
+                    <th class="th-rank">#</th>
                     <th>고객 ID</th>
                     <th>이탈 확률</th>
+                    <th title="이탈 확률 × 월 요금 — 이 고객을 놓쳤을 때 매달 잃는 금액의 기댓값">위험 매출 /월</th>
                     <th>위험도</th>
                     <th>군집</th>
                     <th>주요 위험 요인</th>
                     <th>추천 액션</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody id="table-body"></tbody>
@@ -116,6 +151,15 @@
           </div>
         </div>
       </div>
+
+      <!-- Recommended Actions (full width) -->
+      <section id="event-section" class="event-section hidden">
+        <div class="section-head">
+          <h2 class="section-title">추천 리텐션 액션</h2>
+          <span class="section-sub">위험 구간별로 발동할 캠페인</span>
+        </div>
+        <div id="event-cards" class="events-col"></div>
+      </section>
 
       <!-- Input Section (bottom) -->
       <section class="input-section">
@@ -154,6 +198,8 @@
               <button class="btn-outline" id="upload-btn">파일 선택</button>
               <p class="drop-hint">
                 <a href="#" id="template-download" class="link">템플릿 다운로드</a>
+                &nbsp;·&nbsp;
+                <a href="#" class="link" data-sample>샘플 데이터로 바로 실행</a>
                 &nbsp;·&nbsp; CSV 형식 필요
               </p>
             </div>
